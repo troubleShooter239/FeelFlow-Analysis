@@ -1,4 +1,3 @@
-from collections import defaultdict
 from time import time
 from typing import Any, Dict, List, Union
 from json import dumps, loads
@@ -6,56 +5,11 @@ from json import dumps, loads
 import numpy as np
 from numba import jit
 from cv2 import COLOR_BGR2GRAY, cvtColor, resize
-from deepface.basemodels import (
-    VGGFace,
-    OpenFace,
-    Facenet,
-    Facenet512,
-    FbDeepFace,
-    DeepID,
-    DlibWrapper,
-    ArcFace,
-    SFace,
-)
 from deepface.commons import distance, functions
 from deepface.extendedmodels import Age, Gender, Race, Emotion
 from keras.models import Model
 
-
-def build_model(model_name: str) -> Model:
-    """
-    This function builds a deepface model
-    Parameters:
-            model_name (string): face recognition or facial attribute model
-                    VGG-Face, Facenet, OpenFace, DeepFace, DeepID for face recognition
-                    Age, Gender, Emotion, Race for facial attributes
-
-    Returns:
-            built deepface model ( (tf.)keras.models.Model )
-    """
-    global model_obj
-    model_obj = defaultdict(dict)
-
-    models = {
-        "VGG-Face": VGGFace.loadModel,
-        "OpenFace": OpenFace.loadModel,
-        "Facenet": Facenet.loadModel,
-        "Facenet512": Facenet512.loadModel,
-        "DeepFace": FbDeepFace.loadModel,
-        "DeepID": DeepID.loadModel,
-        "Dlib": DlibWrapper.loadModel,
-        "ArcFace": ArcFace.loadModel,
-        "SFace": SFace.load_model,
-        "Emotion": Emotion.loadModel,
-        "Age": Age.loadModel,
-        "Gender": Gender.loadModel,
-        "Race": Race.loadModel,
-    }
-
-    if model_name not in model_obj[model_name]:
-        model_obj[model_name] = models.get(model_name)()
-
-    return model_obj[model_name]
+from modeling import build_model
 
 
 def represent(
@@ -67,46 +21,50 @@ def represent(
     normalization: str = "base",
 ) -> List[Dict[str, Any]]:
     """
-    This function represents facial images as vectors. The function uses convolutional neural
-    networks models to generate vector embeddings.
+    Represent facial images as multi-dimensional vector embeddings.
 
-    Parameters:
-            img_path (string): exact image path. Alternatively, numpy array (BGR) or based64
-            encoded images could be passed. Source image can have many faces. Then, result will
-            be the size of number of faces appearing in the source image.
+    Args:
+        img_path (str or np.ndarray): The exact path to the image, a numpy array in BGR format,
+            or a base64 encoded image. If the source image contains multiple faces, the result will
+            include information for each detected face.
 
-            model_name (string): VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, Dlib,
-            ArcFace, SFace
+        model_name (str): Model for face recognition. Options: VGG-Face, Facenet, Facenet512,
+            OpenFace, DeepFace, DeepID, Dlib, ArcFace and SFace
 
-            enforce_detection (boolean): If no face could not be detected in an image, then this
-            function will return exception by default. Set this to False not to have this exception.
-            This might be convenient for low resolution images.
+        enforce_detection (boolean): If no face is detected in an image, raise an exception.
+            Default is True. Set to False to avoid the exception for low-resolution images.
 
-            detector_backend (string): set face detector backend to opencv, retinaface, mtcnn, ssd,
-            dlib, mediapipe or yolov8. A special value `skip` could be used to skip face-detection
-            and only encode the given image.
+        detector_backend (string): face detector backend. Options: 'opencv', 'retinaface',
+            'mtcnn', 'ssd', 'dlib', 'mediapipe', 'yolov8'.
 
-            align (boolean): alignment according to the eye positions.
+        align (boolean): Perform alignment based on the eye positions.
 
-            normalization (string): normalize the input image before feeding to model
+        normalization (string): Normalize the input image before feeding it to the model.
+            Default is base. Options: base, raw, Facenet, Facenet2018, VGGFace, VGGFace2, ArcFace
 
     Returns:
-            Represent function returns a list of object, each object has fields as follows:
-            {
-                "embedding": np.array,
-                "facial_area": dict{"x": int, "y": int, "w": int, "h": int},
-                "face_confidence": float
-            }
+        results (List[Dict[str, Any]]): A list of dictionaries, each containing the
+            following fields:
+
+        - embedding (np.array): Multidimensional vector representing facial features.
+            The number of dimensions varies based on the reference model
+            (e.g., FaceNet returns 128 dimensions, VGG-Face returns 4096 dimensions).
+        - facial_area (dict): Detected facial area by face detection in dictionary format.
+            Contains 'x' and 'y' as the left-corner point, and 'w' and 'h'
+            as the width and height. If `detector_backend` is set to 'skip', it represents
+            the full image area and is nonsensical.
+        - face_confidence (float): Confidence score of face detection. If `detector_backend` is set
+            to 'skip', the confidence will be 0 and is nonsensical.
     """
     resp_objs = []
 
-    model = build_model(model_name)
+    model: FacialRecognition = modeling.build_model(model_name)
 
     target_size = functions.find_target_size(model_name=model_name)
     if detector_backend != "skip":
         img_objs = functions.extract_faces(
             img=img_path,
-            target_size=target_size,
+            target_size=(target_size[1], target_size[0]),
             detector_backend=detector_backend,
             grayscale=False,
             enforce_detection=enforce_detection,
@@ -117,29 +75,18 @@ def represent(
         if len(img.shape) == 4:
             img = img[0]  # e.g. (1, 224, 224, 3) to (224, 224, 3)
         if len(img.shape) == 3:
-            img = np.expand_dims(resize(img, target_size), axis=0)
+            img = resize(img, target_size)
+            img = np.expand_dims(img, axis=0)
             if img.max() > 1:
-                img = img.astype(np.float32) / 255.0
+                img = (img.astype(np.float32) / 255.0).astype(np.float32)
 
         img_region = {"x": 0, "y": 0, "w": img.shape[1], "h": img.shape[2]}
         img_objs = [(img, img_region, 0)]
 
     for img, region, confidence in img_objs:
-        # custom normalization
         img = functions.normalize_input(img=img, normalization=normalization)
 
-        # represent
-        # if "keras" in str(type(model)):
-        if isinstance(model, Model):
-            # model.predict causes memory issue when it is called in a for loop
-            # embedding = model.predict(img, verbose=0)[0].tolist()
-            embedding = model(img, training=False).numpy()[0].tolist()
-            # if you still get verbose logging. try call
-            # - `tf.keras.utils.disable_interactive_logging()`
-            # in your main program
-        else:
-            # SFace and Dlib are not keras models and no verbose arguments
-            embedding = model.predict(img)[0].tolist()
+        embedding = model.find_embeddings(img)
 
         resp_obj = {}
         resp_obj["embedding"] = embedding
@@ -423,6 +370,6 @@ def verify(
     return resp_obj
 
 start = time()
-analyze("C:/Users/morgu/Desktop/3.jpg")
+print(analyze("D:/4.jpg"))
 end = time()
 print(end - start)
