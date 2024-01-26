@@ -1,0 +1,1 @@
+DOWNLOAD_URL: str = "https://github.com/serengil/deepface_models/releases/download/v1.0/"
