@@ -5,11 +5,11 @@ from json import dumps, loads
 import numpy as np
 from numba import jit
 from cv2 import COLOR_BGR2GRAY, cvtColor, resize
-from deepface.commons import distance, functions
-from deepface.extendedmodels import Age, Gender, Race, Emotion
-from keras.models import Model
+from tensorflow.python.keras.models import Model
 
-from modeling import build_model
+from extended_models.face_attributes import EmotionClient, GenderClient, RaceClient
+from utils.modeling import build_model
+from utils import functions as F
 
 
 def represent(
@@ -60,9 +60,9 @@ def represent(
 
     model: FacialRecognition = modeling.build_model(model_name)
 
-    target_size = functions.find_target_size(model_name=model_name)
+    target_size = F.find_target_size(model_name=model_name)
     if detector_backend != "skip":
-        img_objs = functions.extract_faces(
+        img_objs = F.extract_faces(
             img=img_path,
             target_size=(target_size[1], target_size[0]),
             detector_backend=detector_backend,
@@ -71,7 +71,7 @@ def represent(
             align=align,
         )
     else:
-        img, _ = functions.load_image(img_path)
+        img, _ = F.load_image(img_path)
         if len(img.shape) == 4:
             img = img[0]  # e.g. (1, 224, 224, 3) to (224, 224, 3)
         if len(img.shape) == 3:
@@ -84,7 +84,7 @@ def represent(
         img_objs = [(img, img_region, 0)]
 
     for img, region, confidence in img_objs:
-        img = functions.normalize_input(img=img, normalization=normalization)
+        img = F.normalize_input(img=img, normalization=normalization)
 
         embedding = model.find_embeddings(img)
 
@@ -98,27 +98,27 @@ def represent(
 
 
 @jit(nopython=True)
+def process_age(img_content: Any, model: Model) -> Dict:
+    return {"age": int(Age.findApparentAge(model.predict(img_content, verbose=0)[0, :]))}
+
+
+@jit(nopython=True)
 def process_emotion(img_content: Any, model: Model) -> Dict:
     img_gray = resize(cvtColor(img_content[0], COLOR_BGR2GRAY), (48, 48))
     emotion = model.predict(np.expand_dims(img_gray, axis=0), verbose=0)[0, :]
     sum_predict = emotion.sum()
     return {
-        "emotion": {l: round(100 * p / sum_predict, 2) for l, p in zip(Emotion.labels, emotion)},
-        "dominant_emotion": Emotion.labels[np.argmax(emotion)]
+        "emotion": {l: round(100 * p / sum_predict, 2) for l, p in zip(EmotionClient.labels, emotion)},
+        "dominant_emotion": EmotionClient.labels[np.argmax(emotion)]
     }
-
-
-@jit(nopython=True)
-def process_age(img_content: Any, model: Model) -> Dict:
-    return {"age": int(Age.findApparentAge(model.predict(img_content, verbose=0)[0, :]))}
 
 
 @jit(nopython=True)
 def process_gender(img_content: Any, model: Model) -> Dict:
     gender_predict = model.predict(img_content, verbose=0)[0, :]
     return {
-        "gender": {l: round(100 * p, 2) for l, p in zip(Gender.labels, gender_predict)},
-        "dominant_gender": Gender.labels[np.argmax(gender_predict)]
+        "gender": {l: round(100 * p, 2) for l, p in zip(GenderClient.labels, gender_predict)},
+        "dominant_gender": GenderClient.labels[np.argmax(gender_predict)]
     }         
 
 
@@ -127,18 +127,14 @@ def process_race(img_content: Any, model: Model) -> Dict:
     race_predict = model.predict(img_content, verbose=0)[0, :]
     sum_predict = race_predict.sum()
     return {
-        "race": {l: round(100 * p / sum_predict, 2) for l, p in zip(Race.labels, race_predict)},
-        "dominant_race": Race.labels[np.argmax(race_predict)]
+        "race": {l: round(100 * p / sum_predict, 2) for l, p in zip(RaceClient.labels, race_predict)},
+        "dominant_race": RaceClient.labels[np.argmax(race_predict)]
     }
 
 
-def analyze(
-    img: Union[str, np.ndarray],
-    actions: str = '{"emotion": true, "age": true, "gender": true, "race": true}',
-    enforce_detection: bool = True,
-    detector_backend: str = "opencv",
-    align: bool = True,
-) -> str:
+def analyze(img: Union[str, np.ndarray], 
+            actions: str = '{"emotion": true, "age": true, "gender": true, "race": true}',
+            enforce_detection: bool = True, align: bool = True) -> str:
     """
     This function analyzes facial attributes including age, gender, emotion and race.
     In the background, analysis function builds convolutional neural network models to
@@ -204,33 +200,25 @@ def analyze(
         "gender": process_gender,
         "race": process_race
     }
+    items: Dict[str, bool] = loads(actions).items()
+    models = {a: build_model(a.capitalize()) for a, should in items if should}
+
+    img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
     
-    actions = loads(actions)
-    models = {act: build_model(act.capitalize()) for act, should_build in actions.items() if should_build}
-
-    img_objs = functions.extract_faces(
-        img=img,
-        target_size=(224, 224),
-        detector_backend=detector_backend,
-        grayscale=False,
-        enforce_detection=enforce_detection,
-        align=align
-    )
-
-    resp_objects = []
-
+    resp_objects: List[Dict[str, Any]] = []
     for content, region, confidence in img_objs:
         if content.shape[0] < 0 or content.shape[1] < 0: 
             continue
         
-        obj = {"region": region, "face_confidence": confidence}
+        obj: Dict[str, Any] = {"region": region, "face_confidence": confidence}
         
-        for action, should_analyze in actions.items():
-            if should_analyze: 
-                try:
-                    obj.update(funcs[action](content, models[action]))
-                except Exception:
-                    pass
+        for action, should_analyze in items:
+            if not should_analyze:
+                continue
+            try:
+                obj.update(funcs[action](content, models[action]))
+            except Exception:
+                continue
 
         resp_objects.append(obj)
 
@@ -293,9 +281,9 @@ def verify(
     """
     tic = time.time()
 
-    target_size = functions.find_target_size(model_name=model_name)
+    target_size = F.find_target_size(model_name=model_name)
 
-    img1_objs = functions.extract_faces(
+    img1_objs = F.extract_faces(
         img=img1_path,
         target_size=target_size,
         detector_backend=detector_backend,
@@ -304,7 +292,7 @@ def verify(
         align=align,
     )
 
-    img2_objs = functions.extract_faces(
+    img2_objs = F.extract_faces(
         img=img2_path,
         target_size=target_size,
         detector_backend=detector_backend,

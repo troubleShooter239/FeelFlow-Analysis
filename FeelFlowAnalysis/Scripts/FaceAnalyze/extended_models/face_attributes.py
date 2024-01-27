@@ -4,9 +4,9 @@ from tensorflow.python.keras.models import Model, Sequential
 from tensorflow.python.keras.layers import (Convolution2D, Flatten, Activation, Conv2D,
     MaxPooling2D, AveragePooling2D, Flatten, Dense, Dropout)
 
-from ..base_models.base_models import AttributeModelBase
-from ..models.recognition import VggFaceClient
-from ..utils.functions import get_deepface_home
+from base_models.base_models import AttributeModelBase
+from models.recognition_models import VggFaceClient
+from utils.functions import get_deepface_home
 
 
 class ApparentAgeClient(AttributeModelBase):
@@ -38,6 +38,8 @@ class ApparentAgeClient(AttributeModelBase):
 
 class EmotionClient(AttributeModelBase):
     """Emotion model class"""
+    labels = ["angry", "disgust", "fear", "happy", "sad", "surprise", "neutral"]
+
     def __init__(self):
         self.model, self.model_name = self.load_model(), "Emotion"
 
@@ -76,6 +78,8 @@ class EmotionClient(AttributeModelBase):
 
 class GenderClient(AttributeModelBase):
     """Gender model class"""
+    labels = ["Woman", "Man"]
+
     def __init__(self):
         self.model, self.model_name = self.load_model(), "Gender"
 
@@ -102,6 +106,8 @@ class GenderClient(AttributeModelBase):
 
 class RaceClient(AttributeModelBase):
     """Race model class"""
+    labels = ["asian", "indian", "black", "white", "middle eastern", "latino hispanic"]
+
     def __init__(self):
         self.model, self.model_name = self.load_model(), "Race"
 
