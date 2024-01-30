@@ -4,7 +4,7 @@ from typing import Any, List, Tuple
 import cv2
 from numpy import ndarray
 
-from base_detector.base_detector import DetectorBase
+from base_detector import DetectorBase
 
 
 class OpenCvClient(DetectorBase):

@@ -3,13 +3,12 @@ from typing import Any, Dict, List, Union
 from json import dumps, loads
 
 import numpy as np
-from numba import jit
-from cv2 import COLOR_BGR2GRAY, cvtColor, resize
-from tensorflow.python.keras.models import Model
+from numba import njit
+from cv2 import resize
 
-from extended_models.face_attributes import EmotionClient, GenderClient, RaceClient
-from utils.modeling import build_model
-from utils import functions as F
+import functions as F
+from modeling import build_model
+from face_attributes import EmotionClient, GenderClient, RaceClient
 
 
 def represent(
@@ -97,15 +96,14 @@ def represent(
     return resp_objs
 
 
-@jit(nopython=True)
-def process_age(img_content: Any, model: Model) -> Dict:
-    return {"age": int(Age.findApparentAge(model.predict(img_content, verbose=0)[0, :]))}
+#@njit
+def process_age(content: np.ndarray) -> Dict[str, int]:
+    return {"age": int(build_model("Age").predict(content))}
 
 
-@jit(nopython=True)
-def process_emotion(img_content: Any, model: Model) -> Dict:
-    img_gray = resize(cvtColor(img_content[0], COLOR_BGR2GRAY), (48, 48))
-    emotion = model.predict(np.expand_dims(img_gray, axis=0), verbose=0)[0, :]
+#@njit
+def process_emotion(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
+    emotion = build_model("Emotion").predict(content)
     sum_predict = emotion.sum()
     return {
         "emotion": {l: round(100 * p / sum_predict, 2) for l, p in zip(EmotionClient.labels, emotion)},
@@ -113,27 +111,27 @@ def process_emotion(img_content: Any, model: Model) -> Dict:
     }
 
 
-@jit(nopython=True)
-def process_gender(img_content: Any, model: Model) -> Dict:
-    gender_predict = model.predict(img_content, verbose=0)[0, :]
+#@njit
+def process_gender(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
+    gender = build_model("Gender").predict(content)
     return {
-        "gender": {l: round(100 * p, 2) for l, p in zip(GenderClient.labels, gender_predict)},
-        "dominant_gender": GenderClient.labels[np.argmax(gender_predict)]
+        "gender": {l: round(100 * p, 2) for l, p in zip(GenderClient.labels, gender)},
+        "dominant_gender": GenderClient.labels[np.argmax(gender)]
     }         
 
 
-@jit(nopython=True)
-def process_race(img_content: Any, model: Model) -> Dict:
-    race_predict = model.predict(img_content, verbose=0)[0, :]
-    sum_predict = race_predict.sum()
+#@njit
+def process_race(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
+    race = build_model("Race").predict(content)
+    sum_predict = race.sum()
     return {
-        "race": {l: round(100 * p / sum_predict, 2) for l, p in zip(RaceClient.labels, race_predict)},
-        "dominant_race": RaceClient.labels[np.argmax(race_predict)]
+        "race": {l: round(100 * p / sum_predict, 2) for l, p in zip(RaceClient.labels, race)},
+        "dominant_race": RaceClient.labels[np.argmax(race)]
     }
 
 
 def analyze(img: Union[str, np.ndarray], 
-            actions: str = '{"emotion": true, "age": true, "gender": true, "race": true}',
+            actions: str = '{"age": true, "emotion": true, "gender": true, "race": true}',
             enforce_detection: bool = True, align: bool = True) -> str:
     """
     This function analyzes facial attributes including age, gender, emotion and race.
@@ -194,29 +192,20 @@ def analyze(img: Union[str, np.ndarray],
                     }
             ]
     """
-    funcs = {
-        "emotion": process_emotion,
-        "age": process_age,
-        "gender": process_gender,
-        "race": process_race
-    }
-    items: Dict[str, bool] = loads(actions).items()
-    models = {a: build_model(a.capitalize()) for a, should in items if should}
-
+    funcs = {"age": process_age, "emotion": process_emotion, "gender": process_gender, "race": process_race}
+    items = loads(actions).items()
     img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
     
-    resp_objects: List[Dict[str, Any]] = []
+    resp_objects = []
     for content, region, confidence in img_objs:
-        if content.shape[0] < 0 or content.shape[1] < 0: 
+        if content.shape[0] <= 0 or content.shape[1] <= 0: 
             continue
-        
-        obj: Dict[str, Any] = {"region": region, "face_confidence": confidence}
-        
+        obj = {"region": region, "face_confidence": confidence}
         for action, should_analyze in items:
             if not should_analyze:
                 continue
             try:
-                obj.update(funcs[action](content, models[action]))
+                obj.update(funcs[action](content))
             except Exception:
                 continue
 
@@ -225,139 +214,126 @@ def analyze(img: Union[str, np.ndarray],
     return dumps(resp_objects, indent=2)
 
 
-def verify(
-    img1_path: Union[str, np.ndarray],
-    img2_path: Union[str, np.ndarray],
-    model_name: str = "VGG-Face",
-    detector_backend: str = "opencv",
-    distance_metric: str = "cosine",
-    enforce_detection: bool = True,
-    align: bool = True,
-    normalization: str = "base",
-) -> Dict[str, Any]:
-    """
-    This function verifies an image pair is same person or different persons. In the background,
-    verification function represents facial images as vectors and then calculates the similarity
-    between those vectors. Vectors of same person images should have more similarity (or less
-    distance) than vectors of different persons.
+# def verify(img1_path: Union[str, np.ndarray], img2_path: Union[str, np.ndarray], 
+#            model_name: str = "VGG-Face", distance_metric: str = "cosine", 
+#            enforce_detection: bool = True, align: bool = True, 
+#            normalization: str = "base") -> Dict[str, Any]:
+#     """This function verifies an image pair is same person or different persons. In the background,
+#     verification function represents facial images as vectors and then calculates the similarity
+#     between those vectors. Vectors of same person images should have more similarity (or less
+#     distance) than vectors of different persons.
 
-    Parameters:
-            img1_path, img2_path: exact image path as string. numpy array (BGR) or based64 encoded
-            images are also welcome. If one of pair has more than one face, then we will compare the
-            face pair with max similarity.
+#     Parameters:
+#             img1_path, img2_path: exact image path as string. numpy array (BGR) or based64 encoded
+#             images are also welcome. If one of pair has more than one face, then we will compare the
+#             face pair with max similarity.
 
-            model_name (str): VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, Dlib
-            , ArcFace and SFace
+#             model_name (str): VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, Dlib
+#             , ArcFace and SFace
 
-            distance_metric (string): cosine, euclidean, euclidean_l2
+#             distance_metric (string): cosine, euclidean, euclidean_l2
 
-            enforce_detection (boolean): If no face could not be detected in an image, then this
-            function will return exception by default. Set this to False not to have this exception.
-            This might be convenient for low resolution images.
+#             enforce_detection (boolean): If no face could not be detected in an image, then this
+#             function will return exception by default. Set this to False not to have this exception.
+#             This might be convenient for low resolution images.
 
-            detector_backend (string): set face detector backend to opencv, retinaface, mtcnn, ssd,
-            dlib, mediapipe or yolov8.
+#             detector_backend (string): set face detector backend to opencv, retinaface, mtcnn, ssd,
+#             dlib, mediapipe or yolov8.
 
-            align (boolean): alignment according to the eye positions.
+#             align (boolean): alignment according to the eye positions.
 
-            normalization (string): normalize the input image before feeding to model
+#             normalization (string): normalize the input image before feeding to model
 
-    Returns:
-            Verify function returns a dictionary.
+#     Returns:
+#             Verify function returns a dictionary.
 
-            {
-                    "verified": True
-                    , "distance": 0.2563
-                    , "max_threshold_to_verify": 0.40
-                    , "model": "VGG-Face"
-                    , "similarity_metric": "cosine"
-                    , 'facial_areas': {
-                            'img1': {'x': 345, 'y': 211, 'w': 769, 'h': 769},
-                            'img2': {'x': 318, 'y': 534, 'w': 779, 'h': 779}
-                    }
-                    , "time": 2
-            }
+#             {
+#                     "verified": True
+#                     , "distance": 0.2563
+#                     , "max_threshold_to_verify": 0.40
+#                     , "model": "VGG-Face"
+#                     , "similarity_metric": "cosine"
+#                     , 'facial_areas': {
+#                             'img1': {'x': 345, 'y': 211, 'w': 769, 'h': 769},
+#                             'img2': {'x': 318, 'y': 534, 'w': 779, 'h': 779}
+#                     }
+#                     , "time": 2
+#             }"""
+#     target_size = F.find_size(model_name)
 
-    """
-    tic = time.time()
+#     img1_objs = F.extract_faces(
+#         img=img1_path,
+#         target_size=target_size,
+#         grayscale=False,
+#         enforce_detection=enforce_detection,
+#         align=align,
+#     )
 
-    target_size = F.find_target_size(model_name=model_name)
+#     img2_objs = F.extract_faces(
+#         img=img2_path,
+#         target_size=target_size,
+#         detector_backend=detector_backend,
+#         grayscale=False,
+#         enforce_detection=enforce_detection,
+#         align=align,
+#     )
 
-    img1_objs = F.extract_faces(
-        img=img1_path,
-        target_size=target_size,
-        detector_backend=detector_backend,
-        grayscale=False,
-        enforce_detection=enforce_detection,
-        align=align,
-    )
+#     distances = []
+#     regions = []
+#     for img1_content, img1_region, _ in img1_objs:
+#         for img2_content, img2_region, _ in img2_objs:
+#             img1_embedding_obj = represent(
+#                 img_path=img1_content,
+#                 model_name=model_name,
+#                 enforce_detection=enforce_detection,
+#                 detector_backend="skip",
+#                 align=align,
+#                 normalization=normalization,
+#             )
 
-    img2_objs = F.extract_faces(
-        img=img2_path,
-        target_size=target_size,
-        detector_backend=detector_backend,
-        grayscale=False,
-        enforce_detection=enforce_detection,
-        align=align,
-    )
+#             img2_embedding_obj = represent(
+#                 img_path=img2_content,
+#                 model_name=model_name,
+#                 enforce_detection=enforce_detection,
+#                 detector_backend="skip",
+#                 align=align,
+#                 normalization=normalization,
+#             )
 
-    distances = []
-    regions = []
-    for img1_content, img1_region, _ in img1_objs:
-        for img2_content, img2_region, _ in img2_objs:
-            img1_embedding_obj = represent(
-                img_path=img1_content,
-                model_name=model_name,
-                enforce_detection=enforce_detection,
-                detector_backend="skip",
-                align=align,
-                normalization=normalization,
-            )
+#             img1_representation = img1_embedding_obj[0]["embedding"]
+#             img2_representation = img2_embedding_obj[0]["embedding"]
 
-            img2_embedding_obj = represent(
-                img_path=img2_content,
-                model_name=model_name,
-                enforce_detection=enforce_detection,
-                detector_backend="skip",
-                align=align,
-                normalization=normalization,
-            )
+#             if distance_metric == "cosine":
+#                 dst = distance.findCosineDistance(img1_representation, img2_representation)
+#             elif distance_metric == "euclidean":
+#                 dst = distance.findEuclideanDistance(img1_representation, img2_representation)
+#             else:
+#                 dst = distance.findEuclideanDistance(
+#                     dst.l2_normalize(img1_representation), dst.l2_normalize(img2_representation)
+#                 )
 
-            img1_representation = img1_embedding_obj[0]["embedding"]
-            img2_representation = img2_embedding_obj[0]["embedding"]
+#             distances.append(dst)
+#             regions.append((img1_region, img2_region))
 
-            if distance_metric == "cosine":
-                dst = distance.findCosineDistance(img1_representation, img2_representation)
-            elif distance_metric == "euclidean":
-                dst = distance.findEuclideanDistance(img1_representation, img2_representation)
-            else:
-                dst = distance.findEuclideanDistance(
-                    dst.l2_normalize(img1_representation), dst.l2_normalize(img2_representation)
-                )
+#     threshold = dst.findThreshold(model_name, distance_metric)
+#     dst = min(distances)
+#     facial_areas = regions[np.argmin(distances)]
 
-            distances.append(dst)
-            regions.append((img1_region, img2_region))
 
-    threshold = dst.findThreshold(model_name, distance_metric)
-    dst = min(distances)
-    facial_areas = regions[np.argmin(distances)]
+#     resp_obj = {
+#         "verified": True if distance <= threshold else False,
+#         "distance": distance,
+#         "threshold": threshold,
+#         "model": model_name,
+#         "detector_backend": detector_backend,
+#         "similarity_metric": distance_metric,
+#         "facial_areas": {"img1": facial_areas[0], "img2": facial_areas[1]},
+#     }
 
-    toc = time.time()
-
-    resp_obj = {
-        "verified": True if distance <= threshold else False,
-        "distance": distance,
-        "threshold": threshold,
-        "model": model_name,
-        "detector_backend": detector_backend,
-        "similarity_metric": distance_metric,
-        "facial_areas": {"img1": facial_areas[0], "img2": facial_areas[1]},
-        "time": round(toc - tic, 2),
-    }
-
-    return resp_obj
+#     return resp_obj
 
 start = time()
-print(analyze("D:/4.jpg"))
+a = analyze("D:/1.jpg")
 end = time()
 print(end - start)
+print(a)

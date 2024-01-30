@@ -1,7 +1,7 @@
-from tensorflow.python.keras.models import Model
+from tensorflow.keras.models import Model
 
-from extended_models import face_attributes
-from models import recognition_models
+import face_attributes
+import recognition_models
 
 
 def build_model(model_name: str) -> Model:
@@ -14,6 +14,8 @@ def build_model(model_name: str) -> Model:
     Returns:
             built deepface model ( (tf.)keras.models.Model )"""
     global model_obj
+    if not "model_obj" in globals():
+        model_obj = dict()
     models = {
         "VGG-Face": recognition_models.VggFaceClient,
         "OpenFace": recognition_models.OpenFaceClient,
@@ -29,8 +31,6 @@ def build_model(model_name: str) -> Model:
         "Gender": face_attributes.GenderClient,
         "Race": face_attributes.RaceClient
     }
-    if "model_obj" not in globals():
-        model_obj = dict()
-    if model_name not in model_obj[model_name]:
-        model_obj[model_name] = models.get(model_name)()
+    if not model_name in model_obj:
+        model_obj[model_name] = models[model_name]()
     return model_obj[model_name]

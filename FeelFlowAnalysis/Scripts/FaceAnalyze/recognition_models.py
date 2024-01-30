@@ -8,16 +8,16 @@ from bz2 import BZ2File
 from dlib import face_recognition_model_v1
 from gdown import download
 from numpy import array, expand_dims, ndarray, uint8
-from tensorflow.python.keras.backend import sqrt, l2_normalize
-from tensorflow.python.keras.models import Model, Sequential
+from tensorflow.keras.backend import sqrt, l2_normalize
+from tensorflow.keras.models import Model, Sequential
 from tensorflow.python.keras.engine import training
-from tensorflow.python.keras.layers import (Activation, ZeroPadding2D, Input, 
+from tensorflow.keras.layers import (Activation, ZeroPadding2D, Input, 
     Conv2D, BatchNormalization, MaxPooling2D, PReLU, Add, Dropout, Flatten, Dense,
     Lambda, AveragePooling2D, LocallyConnected2D, concatenate, Convolution2D)
 
-from base_models.base_models import FacialRecognitionBase, FaceNetBase
-from utils import constants
-from utils.functions import get_deepface_home, l2_normalize
+import constants
+from base_models import FacialRecognitionBase, FaceNetBase
+from functions import get_deepface_home, l2_normalize
 
 
 class ArcFaceClient(FacialRecognitionBase):
@@ -210,7 +210,7 @@ class DlibClient(FacialRecognitionBase):
 class FaceNet128dClient(FaceNetBase):
     """FaceNet-128d model class"""
     def __init__(self) -> None:
-        self.model, self.model_name = super().load_facenet_model(), "FaceNet-128d"
+        self.model, self.model_name = super().load_model(), "FaceNet-128d"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
         """Find embeddings with FaceNet-128d model
@@ -224,7 +224,7 @@ class FaceNet128dClient(FaceNetBase):
 class FaceNet512dClient(FaceNetBase):
     """FaceNet-512d model class"""
     def __init__(self) -> None:
-        self.model, self.model_name = super().load_facenet_model(), "FaceNet-512d"
+        self.model, self.model_name = super().load_model(), "FaceNet-512d"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
         """Find embeddings with FaceNet-512d model

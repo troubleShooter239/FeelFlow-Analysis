@@ -1,12 +1,12 @@
 import cv2
 import numpy as np
-from tensorflow.python.keras.models import Model, Sequential
-from tensorflow.python.keras.layers import (Convolution2D, Flatten, Activation, Conv2D,
+from tensorflow.keras.models import Model, Sequential
+from tensorflow.keras.layers import (Convolution2D, Flatten, Activation, Conv2D,
     MaxPooling2D, AveragePooling2D, Flatten, Dense, Dropout)
 
-from base_models.base_models import AttributeModelBase
-from models.recognition_models import VggFaceClient
-from utils.functions import get_deepface_home
+from base_models import AttributeModelBase
+from recognition_models import VggFaceClient
+from functions import get_deepface_home
 
 
 class ApparentAgeClient(AttributeModelBase):

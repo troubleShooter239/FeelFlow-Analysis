@@ -1,6 +1,6 @@
 from os import getenv
 from pathlib import Path
-from typing import List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import cv2
 import numpy as np
@@ -10,7 +10,7 @@ from base64 import b64decode
 from numba import njit
 from keras.preprocessing.image import img_to_array
 
-from detector.opencv_client import DetectorWrapper
+from opencv_client import DetectorWrapper
 
 
 def get_deepface_home() -> str:
@@ -36,9 +36,8 @@ def load_base64(uri: str) -> np.ndarray:
 
     Returns:
         numpy array: the loaded image."""
-    encoded_data = uri.split(",")[1]
-    nparr = np.fromstring(b64decode(encoded_data), np.uint8)
-    return cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    return cv2.imdecode(np.fromstring(b64decode(uri.split(",")[1]), np.uint8), 
+                        cv2.IMREAD_COLOR)
 
 
 def load_image(img: Union[str, np.ndarray]) -> Tuple[np.ndarray, str]:
@@ -62,7 +61,7 @@ def load_image(img: Union[str, np.ndarray]) -> Tuple[np.ndarray, str]:
 
 def extract_faces(img: Union[str, np.ndarray], target_size: tuple = (224, 224), 
                   grayscale: bool = False, enforce_detection: bool = True, 
-                  align: bool = True) -> List[Tuple[np.ndarray, dict, float]]:
+                  align: bool = True) -> List[Tuple[np.ndarray, Dict[str, int], float]]:
     """Extract faces from an image.
     Args:
         img: a path, url, base64 or numpy array.
@@ -141,3 +140,25 @@ def extract_faces(img: Union[str, np.ndarray], target_size: tuple = (224, 224),
                          "Consider to set enforce_detection arg to False.")
 
     return extracted_faces
+
+
+def find_size(model_name: str) -> Tuple[int, int]:
+    """Find the target size of the model.
+
+    Args:
+        model_name (str): the model name.
+
+    Returns:
+        tuple: the target size."""
+    sizes = {
+        "VGG-Face": (224, 224),
+        "Facenet": (160, 160),
+        "Facenet512": (160, 160),
+        "OpenFace": (96, 96),
+        "DeepFace": (152, 152),
+        "DeepID": (47, 55),
+        "Dlib": (150, 150),
+        "ArcFace": (112, 112),
+        "SFace": (112, 112),
+    }
+    return sizes[model_name]

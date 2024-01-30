@@ -3,15 +3,15 @@ from os.path import isfile
 from typing import List, Union
 
 from gdown import download
-from tensorflow.python.keras.backend import int_shape
-from tensorflow.python.keras.models import Model
-from tensorflow.python.keras.layers import (Activation, Input, Conv2D, 
+from tensorflow.keras.backend import int_shape
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import (Activation, Input, Conv2D, 
     BatchNormalization, MaxPooling2D, Dropout, Dense, Concatenate, Lambda, 
     GlobalAveragePooling2D, add)
 from numpy import ndarray, float64
 
-from utils.constants import DOWNLOAD_URL
-from utils.functions import get_deepface_home
+from constants import DOWNLOAD_URL
+from functions import get_deepface_home
 
 
 class BaseModel(ABC):
