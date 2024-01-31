@@ -1,132 +1,43 @@
-from time import time
-from typing import Any, Dict, List, Union
+from os import path
+from os import stat
+from time import ctime, time
+from typing import Any, Dict, Union
 from json import dumps, loads
 
+from PIL import Image
+from PIL.ExifTags import TAGS
 import numpy as np
-from numba import njit
-from cv2 import resize
+from tensorflow.keras.models import Model
 
 import functions as F
 from modeling import build_model
 from face_attributes import EmotionClient, GenderClient, RaceClient
 
 
-def represent(
-    img_path: Union[str, np.ndarray],
-    model_name: str = "VGG-Face",
-    enforce_detection: bool = True,
-    detector_backend: str = "opencv",
-    align: bool = True,
-    normalization: str = "base",
-) -> List[Dict[str, Any]]:
-    """
-    Represent facial images as multi-dimensional vector embeddings.
-
-    Args:
-        img_path (str or np.ndarray): The exact path to the image, a numpy array in BGR format,
-            or a base64 encoded image. If the source image contains multiple faces, the result will
-            include information for each detected face.
-
-        model_name (str): Model for face recognition. Options: VGG-Face, Facenet, Facenet512,
-            OpenFace, DeepFace, DeepID, Dlib, ArcFace and SFace
-
-        enforce_detection (boolean): If no face is detected in an image, raise an exception.
-            Default is True. Set to False to avoid the exception for low-resolution images.
-
-        detector_backend (string): face detector backend. Options: 'opencv', 'retinaface',
-            'mtcnn', 'ssd', 'dlib', 'mediapipe', 'yolov8'.
-
-        align (boolean): Perform alignment based on the eye positions.
-
-        normalization (string): Normalize the input image before feeding it to the model.
-            Default is base. Options: base, raw, Facenet, Facenet2018, VGGFace, VGGFace2, ArcFace
-
-    Returns:
-        results (List[Dict[str, Any]]): A list of dictionaries, each containing the
-            following fields:
-
-        - embedding (np.array): Multidimensional vector representing facial features.
-            The number of dimensions varies based on the reference model
-            (e.g., FaceNet returns 128 dimensions, VGG-Face returns 4096 dimensions).
-        - facial_area (dict): Detected facial area by face detection in dictionary format.
-            Contains 'x' and 'y' as the left-corner point, and 'w' and 'h'
-            as the width and height. If `detector_backend` is set to 'skip', it represents
-            the full image area and is nonsensical.
-        - face_confidence (float): Confidence score of face detection. If `detector_backend` is set
-            to 'skip', the confidence will be 0 and is nonsensical.
-    """
-    resp_objs = []
-
-    model: FacialRecognition = modeling.build_model(model_name)
-
-    target_size = F.find_target_size(model_name=model_name)
-    if detector_backend != "skip":
-        img_objs = F.extract_faces(
-            img=img_path,
-            target_size=(target_size[1], target_size[0]),
-            detector_backend=detector_backend,
-            grayscale=False,
-            enforce_detection=enforce_detection,
-            align=align,
-        )
-    else:
-        img, _ = F.load_image(img_path)
-        if len(img.shape) == 4:
-            img = img[0]  # e.g. (1, 224, 224, 3) to (224, 224, 3)
-        if len(img.shape) == 3:
-            img = resize(img, target_size)
-            img = np.expand_dims(img, axis=0)
-            if img.max() > 1:
-                img = (img.astype(np.float32) / 255.0).astype(np.float32)
-
-        img_region = {"x": 0, "y": 0, "w": img.shape[1], "h": img.shape[2]}
-        img_objs = [(img, img_region, 0)]
-
-    for img, region, confidence in img_objs:
-        img = F.normalize_input(img=img, normalization=normalization)
-
-        embedding = model.find_embeddings(img)
-
-        resp_obj = {}
-        resp_obj["embedding"] = embedding
-        resp_obj["facial_area"] = region
-        resp_obj["face_confidence"] = confidence
-        resp_objs.append(resp_obj)
-
-    return resp_objs
+def process_age(predictions) -> Dict[str, int]:
+    return {"age": int(predictions)}
 
 
-#@njit
-def process_age(content: np.ndarray) -> Dict[str, int]:
-    return {"age": int(build_model("Age").predict(content))}
-
-
-#@njit
-def process_emotion(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
-    emotion = build_model("Emotion").predict(content)
-    sum_predict = emotion.sum()
+def process_emotion(predictions) -> Dict[str, Union[Dict[str, float], str]]:
+    _sum = predictions.sum()
     return {
-        "emotion": {l: round(100 * p / sum_predict, 2) for l, p in zip(EmotionClient.labels, emotion)},
-        "dominant_emotion": EmotionClient.labels[np.argmax(emotion)]
+        "emotion": {l: round(100 * p / _sum, 2) for l, p in zip(EmotionClient.labels, predictions)},
+        "dominant_emotion": EmotionClient.labels[np.argmax(predictions)]
     }
 
 
-#@njit
-def process_gender(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
-    gender = build_model("Gender").predict(content)
+def process_gender(predictions) -> Dict[str, Union[Dict[str, float], str]]:
     return {
-        "gender": {l: round(100 * p, 2) for l, p in zip(GenderClient.labels, gender)},
-        "dominant_gender": GenderClient.labels[np.argmax(gender)]
+        "gender": {l: round(100 * p, 2) for l, p in zip(GenderClient.labels, predictions)},
+        "dominant_gender": GenderClient.labels[np.argmax(predictions)]
     }         
 
 
-#@njit
-def process_race(content: np.ndarray) -> Dict[str, Union[Dict[str, float], str]]:
-    race = build_model("Race").predict(content)
-    sum_predict = race.sum()
+def process_race(predictions) -> Dict[str, Union[Dict[str, float], str]]:
+    _sum = predictions.sum()
     return {
-        "race": {l: round(100 * p / sum_predict, 2) for l, p in zip(RaceClient.labels, race)},
-        "dominant_race": RaceClient.labels[np.argmax(race)]
+        "race": {l: round(100 * p / _sum, 2) for l, p in zip(RaceClient.labels, predictions)},
+        "dominant_race": RaceClient.labels[np.argmax(predictions)]
     }
 
 
@@ -193,19 +104,18 @@ def analyze(img: Union[str, np.ndarray],
             ]
     """
     funcs = {"age": process_age, "emotion": process_emotion, "gender": process_gender, "race": process_race}
-    items = loads(actions).items()
-    img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
     
+    img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
+
+    models: Dict[str, Model] = {a: build_model(a.capitalize()) for a, s in loads(actions).items() if s}
     resp_objects = []
-    for content, region, confidence in img_objs:
-        if content.shape[0] <= 0 or content.shape[1] <= 0: 
+    for img, region, confidence in img_objs:
+        if img.shape[0] <= 0 or img.shape[1] <= 0: 
             continue
         obj = {"region": region, "face_confidence": confidence}
-        for action, should_analyze in items:
-            if not should_analyze:
-                continue
+        for action, model in models.items():
             try:
-                obj.update(funcs[action](content))
+                obj.update(funcs[action](model.predict(img)))
             except Exception:
                 continue
 
@@ -214,126 +124,119 @@ def analyze(img: Union[str, np.ndarray],
     return dumps(resp_objects, indent=2)
 
 
-# def verify(img1_path: Union[str, np.ndarray], img2_path: Union[str, np.ndarray], 
-#            model_name: str = "VGG-Face", distance_metric: str = "cosine", 
-#            enforce_detection: bool = True, align: bool = True, 
-#            normalization: str = "base") -> Dict[str, Any]:
-#     """This function verifies an image pair is same person or different persons. In the background,
-#     verification function represents facial images as vectors and then calculates the similarity
-#     between those vectors. Vectors of same person images should have more similarity (or less
-#     distance) than vectors of different persons.
+def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray], 
+           model_name: str = "VGG-Face", distance_metric: str = "cosine", 
+           enforce_detection: bool = True, align: bool = True, 
+           normalization: str = "base") -> Dict[str, Any]:
+    """This function verifies an image pair is same person or different persons. In the background,
+    verification function represents facial images as vectors and then calculates the similarity
+    between those vectors. Vectors of same person images should have more similarity (or less
+    distance) than vectors of different persons.
 
-#     Parameters:
-#             img1_path, img2_path: exact image path as string. numpy array (BGR) or based64 encoded
-#             images are also welcome. If one of pair has more than one face, then we will compare the
-#             face pair with max similarity.
+    Parameters:
+            img1_path, img2_path: exact image path as string. numpy array (BGR) or based64 encoded
+            images are also welcome. If one of pair has more than one face, then we will compare the
+            face pair with max similarity.
 
-#             model_name (str): VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, Dlib
-#             , ArcFace and SFace
+            model_name (str): VGG-Face, Facenet, Facenet512, OpenFace, DeepFace, DeepID, Dlib
+            , ArcFace and SFace
 
-#             distance_metric (string): cosine, euclidean, euclidean_l2
+            distance_metric (string): cosine, euclidean, euclidean_l2
 
-#             enforce_detection (boolean): If no face could not be detected in an image, then this
-#             function will return exception by default. Set this to False not to have this exception.
-#             This might be convenient for low resolution images.
+            enforce_detection (boolean): If no face could not be detected in an image, then this
+            function will return exception by default. Set this to False not to have this exception.
+            This might be convenient for low resolution images.
 
-#             detector_backend (string): set face detector backend to opencv, retinaface, mtcnn, ssd,
-#             dlib, mediapipe or yolov8.
+            detector_backend (string): set face detector backend to opencv, retinaface, mtcnn, ssd,
+            dlib, mediapipe or yolov8.
 
-#             align (boolean): alignment according to the eye positions.
+            align (boolean): alignment according to the eye positions.
 
-#             normalization (string): normalize the input image before feeding to model
+            normalization (string): normalize the input image before feeding to model
 
-#     Returns:
-#             Verify function returns a dictionary.
+    Returns:
+            Verify function returns a dictionary.
 
-#             {
-#                     "verified": True
-#                     , "distance": 0.2563
-#                     , "max_threshold_to_verify": 0.40
-#                     , "model": "VGG-Face"
-#                     , "similarity_metric": "cosine"
-#                     , 'facial_areas': {
-#                             'img1': {'x': 345, 'y': 211, 'w': 769, 'h': 769},
-#                             'img2': {'x': 318, 'y': 534, 'w': 779, 'h': 779}
-#                     }
-#                     , "time": 2
-#             }"""
-#     target_size = F.find_size(model_name)
+            {
+                    "verified": True
+                    , "distance": 0.2563
+                    , "max_threshold_to_verify": 0.40
+                    , "model": "VGG-Face"
+                    , "similarity_metric": "cosine"
+                    , 'facial_areas': {
+                            'img1': {'x': 345, 'y': 211, 'w': 769, 'h': 769},
+                            'img2': {'x': 318, 'y': 534, 'w': 779, 'h': 779}
+                    }
+                    , "time": 2
+            }"""
+    target_size = F.find_size(model_name)
 
-#     img1_objs = F.extract_faces(
-#         img=img1_path,
-#         target_size=target_size,
-#         grayscale=False,
-#         enforce_detection=enforce_detection,
-#         align=align,
-#     )
+    distances, regions = [], []
+    for c1, r1, _ in F.extract_faces(img1, target_size, False, enforce_detection, align):
+        for c2, r2, _ in F.extract_faces(img2, target_size, False, enforce_detection, align):
+            repr1 = F.represent(c1, model_name, enforce_detection, "skip", 
+                                align, normalization)[0]["embedding"]
+            repr2 = F.represent(c2, model_name, enforce_detection, "skip", 
+                                align, normalization)[0]["embedding"]
 
-#     img2_objs = F.extract_faces(
-#         img=img2_path,
-#         target_size=target_size,
-#         detector_backend=detector_backend,
-#         grayscale=False,
-#         enforce_detection=enforce_detection,
-#         align=align,
-#     )
+            if distance_metric == "cosine":
+                dst = F.find_cosine_distance(repr1, repr2)
+            elif distance_metric == "euclidean":
+                dst = F.find_euclidean_distance(repr1, repr2)
+            else:
+                dst = F.find_euclidean_distance(dst.l2_normalize(repr1), 
+                                                dst.l2_normalize(repr2))
 
-#     distances = []
-#     regions = []
-#     for img1_content, img1_region, _ in img1_objs:
-#         for img2_content, img2_region, _ in img2_objs:
-#             img1_embedding_obj = represent(
-#                 img_path=img1_content,
-#                 model_name=model_name,
-#                 enforce_detection=enforce_detection,
-#                 detector_backend="skip",
-#                 align=align,
-#                 normalization=normalization,
-#             )
+            distances.append(dst)
+            regions.append((r1, r2))
 
-#             img2_embedding_obj = represent(
-#                 img_path=img2_content,
-#                 model_name=model_name,
-#                 enforce_detection=enforce_detection,
-#                 detector_backend="skip",
-#                 align=align,
-#                 normalization=normalization,
-#             )
-
-#             img1_representation = img1_embedding_obj[0]["embedding"]
-#             img2_representation = img2_embedding_obj[0]["embedding"]
-
-#             if distance_metric == "cosine":
-#                 dst = distance.findCosineDistance(img1_representation, img2_representation)
-#             elif distance_metric == "euclidean":
-#                 dst = distance.findEuclideanDistance(img1_representation, img2_representation)
-#             else:
-#                 dst = distance.findEuclideanDistance(
-#                     dst.l2_normalize(img1_representation), dst.l2_normalize(img2_representation)
-#                 )
-
-#             distances.append(dst)
-#             regions.append((img1_region, img2_region))
-
-#     threshold = dst.findThreshold(model_name, distance_metric)
-#     dst = min(distances)
-#     facial_areas = regions[np.argmin(distances)]
+    threshold = F.find_threshold(model_name, distance_metric)
+    distance = min(distances)
+    facial_areas = regions[np.argmin(distances)]
+    return {
+        "verified": True if distance <= threshold else False,
+        "distance": distance,
+        "threshold": threshold,
+        "model": model_name,
+        "similarity_metric": distance_metric,
+        "facial_areas": {"img1": facial_areas[0], "img2": facial_areas[1]}
+    }
 
 
-#     resp_obj = {
-#         "verified": True if distance <= threshold else False,
-#         "distance": distance,
-#         "threshold": threshold,
-#         "model": model_name,
-#         "detector_backend": detector_backend,
-#         "similarity_metric": distance_metric,
-#         "facial_areas": {"img1": facial_areas[0], "img2": facial_areas[1]},
-#     }
+def get_image_metadata(image_path):
+    with Image.open(image_path) as img:
+        created = ctime(path.getctime(image_path))
+        file_name = path.basename(image_path)
+        file_size = path.getsize(image_path)
+        file_access_time = ctime(path.getatime(image_path))
+        
+        print("Created:", created)
+        print("File Name:", file_name)
+        print("File Size:", file_size, "bytes")
+        print("File Access Date/Time:", file_access_time)
+        print("Location:", path.abspath(image_path))
+        print("File Inode Change Date/Time:", ctime(path.getctime(image_path)))
+        print("File Permissions:", oct(stat(image_path).st_mode)[-4:])
+        print("File Type Extension:", path.splitext(image_path)[1][1:])
+        print("Band names: ", img.getbands())
+        print("Bounding box of the non-zero regions", img.getbbox())
+        print("dpi: ", img.info["dpi"])
+        print("icc_profile: ", img.info["icc_profile"])
+        
+        megapixels = (image_size[0] * image_size[1]) / 1000000
+        print("Megapixels: ", round(megapixels, 2))
+        exif_data = img.getexif()
+        for tag, value in exif_data.items():
+            print(f"{TAGS.get(tag, tag)}: {value}")
 
-#     return resp_obj
+        return dumps({
+            "image_size": img.size,
+            "file_type": img.format,
+            "MIME": Image.MIME[img.format],
 
-start = time()
-a = analyze("D:/1.jpg")
-end = time()
-print(end - start)
-print(a)
+        })
+
+# start = time()
+# a = analyze("D:/1.jpg")
+# print(time() - start)
+# print(a)
