@@ -15,9 +15,9 @@ from tensorflow.keras.layers import (Activation, ZeroPadding2D, Input,
     Conv2D, BatchNormalization, MaxPooling2D, PReLU, Add, Dropout, Flatten, Dense,
     Lambda, AveragePooling2D, LocallyConnected2D, concatenate, Convolution2D)
 
-import constants
-from base_models import FacialRecognitionBase, FaceNetBase
-from functions import get_deepface_home, l2_normalize
+import utils.constants as C
+import utils.functions as functions
+from base.base_models import FacialRecognitionBase, FaceNetBase
 
 
 class ArcFaceClient(FacialRecognitionBase):
@@ -35,8 +35,7 @@ class ArcFaceClient(FacialRecognitionBase):
         """
         return self.model(img, training=False).numpy()[0].tolist()
 
-    def load_model(self, 
-                   url: str = constants.DOWNLOAD_URL + "arcface_weights.h5") -> Model:
+    def load_model(self, url: str = C.DOWNLOAD_URL_ARCFACE) -> Model:
         """Construct ArcFace model, download its weights and load
         Returns:
             model (Model)"""
@@ -51,18 +50,16 @@ class ArcFaceClient(FacialRecognitionBase):
         embedding = BatchNormalization(momentum=0.9, epsilon=2e-5, 
                                        name="embedding", scale=True)(arcface_model)
         model = Model(inputs, embedding, name=base_model.name)
-        output = get_deepface_home() + "/.deepface/weights/arcface_weights.h5"
+        output = functions.get_deepface_home() + C.PATH_WEIGHTS_ARCFACE
         FacialRecognitionBase._download(url, output)
         model.load_weights(output)
         return model
 
     @staticmethod
     def ResNet34() -> Model:
-        """
-        ResNet34 model
+        """ResNet34 model
         Returns:
-            model (Model)
-        """
+            model (Model)"""
         img_input = Input(shape=(112, 112, 3))
         x = ZeroPadding2D(padding=1, name="conv1_pad")(img_input)
         x = Conv2D(64, 3, strides=1, use_bias=False, 
@@ -73,8 +70,7 @@ class ArcFaceClient(FacialRecognitionBase):
         return training.Model(img_input, x, name="ResNet34")
 
     @staticmethod
-    def block1(x, filters, kernel_size = 3, stride = 1, 
-               conv_shortcut = True, name = None):
+    def block1(x, filters, kernel_size = 3, stride = 1, conv_shortcut = True, name = None):
         bn_axis = 3
         if conv_shortcut:
             shortcut = Conv2D(filters,
@@ -122,6 +118,44 @@ class ArcFaceClient(FacialRecognitionBase):
         return ArcFaceClient.stack1(x, 512, 3, name="conv5")
 
 
+class DeepFaceClient(FacialRecognitionBase):
+    """Fb's DeepFace model class"""
+    def __init__(self) -> None:
+        self.model, self.model_name = self.load_model(), "DeepFace"
+
+    def find_embeddings(self, img: ndarray) -> List[float]:
+        """Find embeddings with OpenFace model
+        Args:
+            img (np.ndarray): pre-loaded image in BGR
+        Returns
+            embeddings (list): multi-dimensional vector"""
+        return self.model(img, training=False).numpy()[0].tolist()
+
+    def load_model(self, url: str = C.DOWNLOAD_URL_DEEPFACE) -> Model:
+        """Construct DeepFace model, download its weights and load"""
+        base_model = Sequential()
+        base_model.add(Convolution2D(32, (11, 11), activation="relu", 
+                                     name="C1", input_shape=(152, 152, 3)))
+        base_model.add(MaxPooling2D(pool_size=3, strides=2, padding="same", name="M2"))
+        base_model.add(Convolution2D(16, (9, 9), activation="relu", name="C3"))
+        base_model.add(LocallyConnected2D(16, (9, 9), activation="relu", name="L4"))
+        base_model.add(LocallyConnected2D(16, (7, 7), strides=2, activation="relu", name="L5"))
+        base_model.add(LocallyConnected2D(16, (5, 5), activation="relu", name="L6"))
+        base_model.add(Flatten(name="F0"))
+        base_model.add(Dense(4096, activation="relu", name="F7"))
+        base_model.add(Dropout(rate=0.5, name="D0"))
+        base_model.add(Dense(8631, activation="softmax", name="F8"))
+        home = functions.get_deepface_home()
+        dr = home + C.PATH_WEIGHTS_DEEPFACE
+        if not isfile(dr):
+            output = dr + ".zip"
+            download(url, output)
+            with ZipFile(output, "r") as zip_ref:
+                zip_ref.extractall(home + C._WEIGHTS)
+        base_model.load_weights(dr)
+        return Model(inputs=base_model.layers[0].input, outputs=base_model.layers[-3].output)
+
+
 class DeepIdClient(FacialRecognitionBase):
     """DeepId model class"""
     def __init__(self) -> None:
@@ -135,8 +169,7 @@ class DeepIdClient(FacialRecognitionBase):
             embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
-    def load_model(self, 
-                   url: str = constants.DOWNLOAD_URL + "deepid_keras_weights.h5") -> Model:
+    def load_model(self, url: str = C.DOWNLOAD_URL_DEEPID) -> Model:
         """Construct DeepId model, download its weights and load"""
         myInput = Input(shape=(55, 47, 3))
         x = Conv2D(20, (4, 4), name="Conv1", activation="relu", input_shape=(55, 47, 3))(myInput)
@@ -156,7 +189,7 @@ class DeepIdClient(FacialRecognitionBase):
         y = Add()([fc11, fc12])
         y = Activation("relu", name="deepid")(y)
         model = Model(inputs=[myInput], outputs=y)
-        output = get_deepface_home() + "/.deepface/weights/deepid_keras_weights.h5"
+        output = functions.get_deepface_home() + C.PATH_WEIGHTS_DEEPID
         self._download(url, output)
         model.load_weights(output)
         return model
@@ -165,12 +198,10 @@ class DeepIdClient(FacialRecognitionBase):
 class DlibResNet:
     def __init__(self) -> None:
         self.layers = [DlibMetaData()]
-        home = get_deepface_home()
-        file = home + "/.deepface/weights/dlib_face_recognition_resnet_model_v1.dat"
+        file = functions.get_deepface_home() + C.PATH_WEIGHTS_DLIB
         if not isfile(file):
-            file_name = "dlib_face_recognition_resnet_model_v1.dat.bz2"
-            output = f"{home}/.deepface/weights/{file_name}"
-            download(f"http://dlib.net/files/{file_name}", output, quiet=False)
+            output = f"{file}.bz2"
+            download(f"http://dlib.net/files/{C.DLIB_NAME}.bz2", output)
             with open(output[:-4], "wb") as f:
                 f.write(BZ2File(output).read())
         self.model = face_recognition_model_v1(file)
@@ -200,11 +231,8 @@ class DlibClient(FacialRecognitionBase):
         if img.max() <= 1:
             img = img * 255
 
-        img = img.astype(uint8)
-
-        img_representation = self.model.model.compute_face_descriptor(img)
-        img_representation = array(img_representation)
-        return expand_dims(img_representation, axis=0)[0].tolist()
+        return expand_dims(array(self.model.model.compute_face_descriptor(
+            img.astype(uint8))), axis=0)[0].tolist()
 
 
 class FaceNet128dClient(FaceNetBase):
@@ -235,46 +263,6 @@ class FaceNet512dClient(FaceNetBase):
         return self.model(img, training=False).numpy()[0].tolist()
 
 
-class DeepFaceClient(FacialRecognitionBase):
-    """Fb's DeepFace model class"""
-    def __init__(self) -> None:
-        self.model, self.model_name = self.load_model(), "DeepFace"
-
-    def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with OpenFace model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
-        return self.model(img, training=False).numpy()[0].tolist()
-
-    def load_model(self, 
-                   url: str = "https://github.com/swghosh/DeepFace/releases/download/weights-" +
-                   "vggface2-2d-aligned/VGGFace2_DeepFace_weights_val-0.9034.h5.zip") -> Model:
-        """Construct DeepFace model, download its weights and load"""
-        base_model = Sequential()
-        base_model.add(Convolution2D(32, (11, 11), activation="relu", 
-                                     name="C1", input_shape=(152, 152, 3)))
-        base_model.add(MaxPooling2D(pool_size=3, strides=2, padding="same", name="M2"))
-        base_model.add(Convolution2D(16, (9, 9), activation="relu", name="C3"))
-        base_model.add(LocallyConnected2D(16, (9, 9), activation="relu", name="L4"))
-        base_model.add(LocallyConnected2D(16, (7, 7), strides=2, activation="relu", name="L5"))
-        base_model.add(LocallyConnected2D(16, (5, 5), activation="relu", name="L6"))
-        base_model.add(Flatten(name="F0"))
-        base_model.add(Dense(4096, activation="relu", name="F7"))
-        base_model.add(Dropout(rate=0.5, name="D0"))
-        base_model.add(Dense(8631, activation="softmax", name="F8"))
-        home = get_deepface_home()
-        dr = home + "/.deepface/weights/VGGFace2_DeepFace_weights_val-0.9034.h5"
-        if not isfile(dr):
-            output = dr + ".zip"
-            download(url, output)
-            with ZipFile(output, "r") as zip_ref:
-                zip_ref.extractall(home + "/.deepface/weights/")
-        base_model.load_weights(dr)
-        return Model(inputs=base_model.layers[0].input, outputs=base_model.layers[-3].output)
-
-
 class OpenFaceClient(FacialRecognitionBase):
     """OpenFace model class"""
     def __init__(self) -> None:
@@ -288,7 +276,7 @@ class OpenFaceClient(FacialRecognitionBase):
             embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
-    def load_model(self, url: str =constants.DOWNLOAD_URL + "openface_weights.h5") -> Model:
+    def load_model(self, url: str = C.DOWNLOAD_URL_OPENFACE) -> Model:
         """Consturct OpenFace model, download its weights and load
         Returns:
             model (Model)"""
@@ -519,8 +507,7 @@ class OpenFaceClient(FacialRecognitionBase):
         dense_layer = Dense(128, name="dense_layer")(reshape_layer)
         norm_layer = Lambda(lambda x: l2_normalize(x, axis=1), name="norm_layer")(dense_layer)
         model = Model(inputs=[myInput], outputs=norm_layer)
-        home = get_deepface_home()
-        output = home + "/.deepface/weights/openface_weights.h5"
+        output = functions.get_deepface_home() + C.PATH_WEIGHTS_OPENFACE
         self._download(url, output)
         model.load_weights(output)
         return model
@@ -548,10 +535,9 @@ class SFaceClient(FacialRecognitionBase):
             embeddings (list): multi-dimensional vector"""
         return self.model.model.feature((img[0] * 255).astype(uint8))[0].tolist()
 
-    def load_model(self, url: str ="https://github.com/opencv/opencv_zoo/raw/main/models/" +
-                   "face_recognition_sface/face_recognition_sface_2021dec.onnx") -> SFaceWrapper:
+    def load_model(self, url: str = C.DOWNLOAD_URL_SFACE) -> SFaceWrapper:
         """Construct SFace model, download its weights and load"""
-        output = get_deepface_home() + "/.deepface/weights/face_recognition_sface_2021dec.onnx"
+        output = functions.get_deepface_home() + C.PATH_WEIGHTS_SFACE
         self._download(url, output)
         return SFaceWrapper(output)
 
@@ -567,7 +553,7 @@ class VggFaceClient(FacialRecognitionBase):
             img (np.ndarray): pre-loaded image in BGR
         Returns
             embeddings (list): multi-dimensional vector"""
-        return l2_normalize(self.model(img, training=False).numpy()[0].tolist()).tolist()
+        return functions.l2_normalize(self.model(img, training=False).numpy()[0].tolist()).tolist()
 
     @staticmethod
     def base_model() -> Sequential:
@@ -615,13 +601,12 @@ class VggFaceClient(FacialRecognitionBase):
         model.add(Activation("softmax"))
         return model
 
-    def load_model(self, 
-                   url: str = constants.DOWNLOAD_URL + "vgg_face_weights.h5") -> Model:
+    def load_model(self, url: str = C.DOWNLOAD_URL_VGGFACE) -> Model:
         """Final VGG-Face model being used for finding embeddings
         Returns:
             model (Model): returning 4096 dimensional vectors"""
         model = VggFaceClient.base_model()
-        output = get_deepface_home() + "/.deepface/weights/vgg_face_weights.h5"
+        output = functions.get_deepface_home() + C.PATH_WEIGHTS_VGGFACE
         self._download(url, output)
         model.load_weights(output)
         base_model_output = Sequential()

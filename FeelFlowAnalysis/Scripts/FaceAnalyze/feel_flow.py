@@ -1,17 +1,21 @@
-from os import path
-from os import stat
+from os import path, stat
 from time import ctime, time
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Tuple, Union
 from json import dumps, loads
 
+import cv2
+import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS
-import numpy as np
 from tensorflow.keras.models import Model
+from tensorflow.keras.preprocessing import image
 
-import functions as F
-from modeling import build_model
-from face_attributes import EmotionClient, GenderClient, RaceClient
+import utils.functions as F
+from detectors.opencv_client import DetectorWrapper
+from loaders.image_loader import load_image
+from utils.distance import find_cosine, find_euclidean
+from utils.modeling import build_model
+from models.face_attributes import EmotionClient, GenderClient, RaceClient
 
 
 def process_age(predictions) -> Dict[str, int]:
@@ -44,11 +48,10 @@ def process_race(predictions) -> Dict[str, Union[Dict[str, float], str]]:
 def analyze(img: Union[str, np.ndarray], 
             actions: str = '{"age": true, "emotion": true, "gender": true, "race": true}',
             enforce_detection: bool = True, align: bool = True) -> str:
-    """
-    This function analyzes facial attributes including age, gender, emotion and race.
+    """This function analyzes facial attributes including age, gender, emotion and race.
     In the background, analysis function builds convolutional neural network models to
     classify age, gender, emotion and race of the input image.
-
+    
     Parameters:
             img: exact image path, numpy array (BGR) or base64 encoded image could be passed.
             If source image has more than one face, then result will be size of number of faces
@@ -101,14 +104,14 @@ def analyze(img: Union[str, np.ndarray],
                                     'white': 93.44925880432129
                             }
                     }
-            ]
-    """
+            ]"""
     funcs = {"age": process_age, "emotion": process_emotion, "gender": process_gender, "race": process_race}
     
-    img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
+    img_objs = extract_faces(img, (224, 224), False, enforce_detection, align)
 
     models: Dict[str, Model] = {a: build_model(a.capitalize()) for a, s in loads(actions).items() if s}
     resp_objects = []
+    # TODO: Make it parallel
     for img, region, confidence in img_objs:
         if img.shape[0] <= 0 or img.shape[1] <= 0: 
             continue
@@ -122,6 +125,150 @@ def analyze(img: Union[str, np.ndarray],
         resp_objects.append(obj)
 
     return dumps(resp_objects, indent=2)
+
+
+def represent(img_path: Union[str, np.ndarray], model_name: str = "VGG-Face", 
+              enforce_detection: bool = True, detector_backend: str = "opencv",
+              align: bool = True, normalization: str = "base") -> List[Dict[str, Any]]:
+    """Represent facial images as multi-dimensional vector embeddings.
+
+    Args:
+        img_path (str or np.ndarray): The exact path to the image, a numpy array in BGR format,
+            or a base64 encoded image. If the source image contains multiple faces, the result will
+            include information for each detected face.
+
+        model_name (str): Model for face recognition. Options: VGG-Face, Facenet, Facenet512,
+            OpenFace, DeepFace, DeepID, Dlib, ArcFace and SFace
+
+        enforce_detection (boolean): If no face is detected in an image, raise an exception.
+            Default is True. Set to False to avoid the exception for low-resolution images.
+
+        detector_backend (string): face detector backend. Options: 'opencv', 'retinaface',
+            'mtcnn', 'ssd', 'dlib', 'mediapipe', 'yolov8'.
+
+        align (boolean): Perform alignment based on the eye positions.
+
+        normalization (string): Normalize the input image before feeding it to the model.
+            Default is base. Options: base, raw, Facenet, Facenet2018, VGGFace, VGGFace2, ArcFace
+
+    Returns:
+        results (List[Dict[str, Any]]): A list of dictionaries, each containing the
+            following fields:
+
+        - embedding (np.array): Multidimensional vector representing facial features.
+            The number of dimensions varies based on the reference model
+            (e.g., FaceNet returns 128 dimensions, VGG-Face returns 4096 dimensions).
+        - facial_area (dict): Detected facial area by face detection in dictionary format.
+            Contains 'x' and 'y' as the left-corner point, and 'w' and 'h'
+            as the width and height. If `detector_backend` is set to 'skip', it represents
+            the full image area and is nonsensical.
+        - face_confidence (float): Confidence score of face detection. If `detector_backend` is set
+            to 'skip', the confidence will be 0 and is nonsensical."""
+    model = build_model(model_name)
+    target_size = F.find_size(model_name)
+    if detector_backend != "skip":
+        img_objs = extract_faces(img_path, (target_size[1], target_size[0]), 
+                                 detector_backend, False, enforce_detection, align=align)
+    else:
+        img, _ = load_image(img_path)
+        if len(img.shape) == 4:
+            img = img[0]
+        if len(img.shape) == 3:
+            img = cv2.resize(img, target_size)
+            img = np.expand_dims(img, axis=0)
+            if img.max() > 1:
+                img = (img.astype(np.float32) / 255.0).astype(np.float32)
+
+        img_objs = [(img, {"x": 0, "y": 0, "w": img.shape[1], "h": img.shape[2]}, 0)]
+    
+    resp_objs = []
+    for i, r, c in img_objs:
+        e = model.find_embeddings(F.normalize_input(i, normalization))
+        resp_obj = {"embedding": e, "facial_area": r, "face_confidence": c}
+        resp_objs.append(resp_obj)
+
+    return resp_objs
+
+
+def extract_faces(img: Union[str, np.ndarray], target_size: tuple = (224, 224), 
+                  grayscale: bool = False, enforce_detection: bool = True, 
+                  align: bool = True) -> List[Tuple[np.ndarray, Dict[str, int], float]]:
+    """Extract faces from an image.
+    Args:
+        img: a path, url, base64 or numpy array.
+        target_size (tuple, optional): the target size of the extracted faces.
+        Defaults to (224, 224).
+        detector_backend (str, optional): the face detector backend. Defaults to "opencv".
+        grayscale (bool, optional): whether to convert the extracted faces to grayscale.
+        Defaults to False.
+        enforce_detection (bool, optional): whether to enforce face detection. Defaults to True.
+        align (bool, optional): whether to align the extracted faces. Defaults to True.
+
+    Raises:
+        ValueError: if face could not be detected and enforce_detection is True.
+
+    Returns:
+        results (List[Tuple[np.ndarray, dict, float]]): A list of tuples
+            where each tuple contains:
+            - detected_face (np.ndarray): The detected face as a NumPy array.
+            - face_region (dict): The image region represented as
+                {"x": x, "y": y, "w": w, "h": h}
+            - confidence (float): The confidence score associated with the detected face."""
+    img, img_name = load_image(img)
+
+    face_objs = DetectorWrapper.detect_faces(img, align)
+
+    if len(face_objs) == 0 and enforce_detection:
+        if img_name is not None:
+            raise ValueError(f"Face could not be detected in {img_name}."
+                             "Please confirm that the picture is a face photo "
+                             "or consider to set enforce_detection param to False.")
+        else:
+            raise ValueError("Face could not be detected. Please confirm that the "
+                             "picture is a face photo or consider to set "
+                             "enforce_detection param to False.")
+
+    img_region = [0, 0, img.shape[1], img.shape[0]]
+    if len(face_objs) == 0 and not enforce_detection:
+        face_objs = [(img, img_region, 0)]
+
+    extracted_faces = []
+    for current_img, reg, confidence in face_objs:
+        if current_img.shape[0] < 0 or current_img.shape[1] < 0:
+            continue
+
+        if grayscale:
+            current_img = cv2.cvtColor(current_img, cv2.COLOR_BGR2GRAY)
+
+        factor = min(target_size[0] / current_img.shape[0], 
+                     target_size[1] / current_img.shape[1])
+
+        current_img = cv2.resize(current_img, 
+                                (int(current_img.shape[1] * factor), 
+                                int(current_img.shape[0] * factor)))
+
+        diff_0 = target_size[0] - current_img.shape[0]
+        diff_1 = target_size[1] - current_img.shape[1]
+        
+        if grayscale:
+            current_img = np.pad(current_img, ((diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2)), "constant")
+        else:
+            current_img = np.pad(current_img, ((diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2), (0, 0)), "constant")
+
+        if current_img.shape[0:2] != target_size:
+            current_img = cv2.resize(current_img, target_size)
+
+        img_pixels = np.expand_dims(image.img_to_array(current_img), axis=0) / 255
+        regs = {"x": int(reg[0]), "y": int(reg[1]), "w": int(reg[2]), "h": int(reg[3])}
+        extracted_faces.append((img_pixels, regs, confidence))
+
+    if len(extracted_faces) == 0 and enforce_detection:
+        raise ValueError(f"Detected face shape is {img.shape}. "
+                         "Consider to set enforce_detection arg to False.")
+
+    return extracted_faces
 
 
 def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray], 
@@ -172,20 +319,19 @@ def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray],
     target_size = F.find_size(model_name)
 
     distances, regions = [], []
-    for c1, r1, _ in F.extract_faces(img1, target_size, False, enforce_detection, align):
-        for c2, r2, _ in F.extract_faces(img2, target_size, False, enforce_detection, align):
-            repr1 = F.represent(c1, model_name, enforce_detection, "skip", 
-                                align, normalization)[0]["embedding"]
-            repr2 = F.represent(c2, model_name, enforce_detection, "skip", 
-                                align, normalization)[0]["embedding"]
+    for c1, r1, _ in extract_faces(img1, target_size, False, enforce_detection, align):
+        for c2, r2, _ in extract_faces(img2, target_size, False, enforce_detection, align):
+            repr1 = represent(c1, model_name, enforce_detection, "skip", 
+                              align, normalization)[0]["embedding"]
+            repr2 = represent(c2, model_name, enforce_detection, "skip", 
+                              align, normalization)[0]["embedding"]
 
             if distance_metric == "cosine":
-                dst = F.find_cosine_distance(repr1, repr2)
+                dst = find_cosine(repr1, repr2)
             elif distance_metric == "euclidean":
-                dst = F.find_euclidean_distance(repr1, repr2)
+                dst = find_euclidean(repr1, repr2)
             else:
-                dst = F.find_euclidean_distance(dst.l2_normalize(repr1), 
-                                                dst.l2_normalize(repr2))
+                dst = find_euclidean(dst.l2_normalize(repr1), dst.l2_normalize(repr2))
 
             distances.append(dst)
             regions.append((r1, r2))
@@ -204,37 +350,30 @@ def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray],
 
 
 def get_image_metadata(image_path):
-    with Image.open(image_path) as img:
-        created = ctime(path.getctime(image_path))
-        file_name = path.basename(image_path)
-        file_size = path.getsize(image_path)
-        file_access_time = ctime(path.getatime(image_path))
-        
-        print("Created:", created)
-        print("File Name:", file_name)
-        print("File Size:", file_size, "bytes")
-        print("File Access Date/Time:", file_access_time)
-        print("Location:", path.abspath(image_path))
-        print("File Inode Change Date/Time:", ctime(path.getctime(image_path)))
-        print("File Permissions:", oct(stat(image_path).st_mode)[-4:])
-        print("File Type Extension:", path.splitext(image_path)[1][1:])
-        print("Band names: ", img.getbands())
-        print("Bounding box of the non-zero regions", img.getbbox())
-        print("dpi: ", img.info["dpi"])
-        print("icc_profile: ", img.info["icc_profile"])
-        
-        megapixels = (image_size[0] * image_size[1]) / 1000000
-        print("Megapixels: ", round(megapixels, 2))
-        exif_data = img.getexif()
-        for tag, value in exif_data.items():
-            print(f"{TAGS.get(tag, tag)}: {value}")
-
-        return dumps({
+    with Image.open(image_path) as img:                
+        data = {
             "image_size": img.size,
             "file_type": img.format,
-            "MIME": Image.MIME[img.format],
+            "mime": Image.MIME[img.format],
+            "time_created": ctime(path.getctime(image_path)),
+            "name": path.basename(image_path),
+            "size": path.getsize(image_path),
+            "access_time": ctime(path.getatime(image_path)),
+            "location": path.abspath(image_path),
+            "inode_change_time": ctime(path.getctime(image_path)),
+            "permission": oct(stat(image_path).st_mode)[-4:],
+            "type_extension": path.splitext(image_path)[1][1:],
+            "band_names": img.getbands(),
+            "bbox": img.getbbox(),
+            #"dpi": img.info["dpi"],
+            #"icc_profile": img.info["icc_profile"],
+            "megapixels": round(img.size[0] * img.size[1] / 1000000, 2),
+        }
+        #data.update({TAGS.get(t, t): v for t, v in img.getexif().items()})
+    return dumps(data, indent=2)
 
-        })
+
+# print(get_image_metadata("D:/1.jpg"))
 
 # start = time()
 # a = analyze("D:/1.jpg")

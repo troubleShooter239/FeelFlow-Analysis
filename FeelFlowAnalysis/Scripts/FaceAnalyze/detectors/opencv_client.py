@@ -1,10 +1,9 @@
 from os.path import isfile, sep
-from typing import Any, List, Tuple
+from typing import Any
 
 import cv2
-from numpy import ndarray
 
-from base_detector import DetectorBase
+from base.base_detector import DetectorBase, ndarray, List, Tuple
 
 
 class OpenCvClient(DetectorBase):
@@ -113,8 +112,7 @@ class OpenCvClient(DetectorBase):
             if not isfile(face_detector_path):
                 raise ValueError(
                     "Confirm that opencv is installed on your environment! Expected path ",
-                    face_detector_path,
-                    " violated.",
+                    face_detector_path, " violated.",
                 )
             detector = cv2.CascadeClassifier(face_detector_path)
 

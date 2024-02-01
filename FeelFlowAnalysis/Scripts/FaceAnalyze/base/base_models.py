@@ -10,8 +10,8 @@ from tensorflow.keras.layers import (Activation, Input, Conv2D,
     GlobalAveragePooling2D, add)
 from numpy import ndarray, float64
 
-from constants import DOWNLOAD_URL
-from functions import get_deepface_home
+import utils.constants as C
+import utils.functions as functions
 
 
 class BaseModel(ABC):
@@ -758,8 +758,7 @@ class FaceNetBase(FacialRecognitionBase):
         x = BatchNormalization(momentum=0.995, epsilon=0.001, scale=False, name="Bottleneck_BatchNorm")(x)
         return Model(inputs, x, name="inception_resnet_v1")
 
-    def load_model(self, 
-                   url: str = DOWNLOAD_URL + "facenet_weights.h5") -> Model:
+    def load_model(self, url: str = C.DOWNLOAD_URL_FACENET) -> Model:
         """Construct FaceNet model (128d or 512d), download its weights and load
         Args:
             dimension (int): construct FaceNet-128d or FaceNet-512d models
@@ -768,11 +767,11 @@ class FaceNetBase(FacialRecognitionBase):
             model (Model)"""
         if self.__class__.__name__ == "FaceNet128dClient":
             model = FaceNetBase._inception_res_netV2()
-            output = get_deepface_home() + "/.deepface/weights/facenet_weights.h5"
+            output = functions.get_deepface_home() + C.PATH_WEIGHTS_FACENET
         else:
             model = FaceNetBase._inception_res_netV2(512)
-            url = DOWNLOAD_URL + "facenet512_weights.h5"
-            output = get_deepface_home() + "/.deepface/weights/facenet512_weights.h5"
+            url = C.DOWNLOAD_URL_FACENET512
+            output = functions.get_deepface_home() + C.PATH_WEIGHTS_FACENET512
         self._download(url, output)
         model.load_weights(output)
         return model

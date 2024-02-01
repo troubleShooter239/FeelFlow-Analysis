@@ -1,7 +1,7 @@
 from tensorflow.keras.models import Model
 
-import face_attributes
-import recognition_models
+import models.face_attributes as face_attributes
+import models.recognition_models as recognition_models
 
 
 def build_model(model_name: str) -> Model:

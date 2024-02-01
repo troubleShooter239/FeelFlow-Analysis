@@ -8,7 +8,7 @@ from numpy import arctan2, array, degrees, ndarray
 class DetectorBase(ABC):
     @staticmethod
     def _align_face(img: ndarray, left_eye: Union[list, tuple], 
-                   right_eye: Union[list, tuple],) -> ndarray:
+                    right_eye: Union[list, tuple],) -> ndarray:
         """Align a given image horizantally with respect to their left and right eye locations
         Args:
             img (np.ndarray): pre-loaded image with detected face
@@ -27,5 +27,4 @@ class DetectorBase(ABC):
     def build_model(self) -> dict: pass
 
     @abstractmethod
-    def detect_faces(self, img: ndarray, 
-                     align: bool = True) -> List[Tuple[ndarray, List[float], float]]: pass
+    def detect_faces(self, img: ndarray, align: bool = True) -> List[Tuple[ndarray, List[float], float]]: pass
