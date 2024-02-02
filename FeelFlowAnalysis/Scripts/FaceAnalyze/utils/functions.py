@@ -1,4 +1,4 @@
-from os import getenv
+import os
 from pathlib import Path
 from typing import Tuple, Union
 
@@ -13,7 +13,20 @@ def get_deepface_home() -> str:
 
     Returns:
         str: the home directory."""
-    return str(getenv(C._DEEPFACE_HOME, str(Path.home())))
+    return str(os.getenv(C._DEEPFACE_HOME, str(Path.home())))
+
+
+def initialize_folder() -> None:
+    """Initialize the folder for storing weights and models.
+
+    Raises:
+        OSError: if the folder cannot be created."""
+    deepFaceHomePath = get_deepface_home() + "/.deepface"
+    if not os.path.exists(deepFaceHomePath):
+        os.makedirs(deepFaceHomePath, exist_ok=True)
+    weightsPath = deepFaceHomePath + "/weights"
+    if not os.path.exists(weightsPath):
+        os.makedirs(weightsPath, exist_ok=True)
 
 
 @njit

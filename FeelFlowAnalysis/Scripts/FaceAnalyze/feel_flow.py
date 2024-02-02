@@ -376,6 +376,6 @@ def get_image_metadata(image_path):
 # print(get_image_metadata("D:/1.jpg"))
 
 # start = time()
-# a = analyze("D:/1.jpg")
+# a = analyze("C:/1.jpg")
 # print(time() - start)
 # print(a)
