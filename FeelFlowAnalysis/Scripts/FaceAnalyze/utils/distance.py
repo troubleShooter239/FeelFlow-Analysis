@@ -4,7 +4,6 @@ import numpy as np
 from numba import njit
 
 
-@njit
 def find_cosine(source: Union[np.ndarray, list], test: Union[np.ndarray, list]) -> np.float64:
     if isinstance(source, list):
         source = np.array(source)

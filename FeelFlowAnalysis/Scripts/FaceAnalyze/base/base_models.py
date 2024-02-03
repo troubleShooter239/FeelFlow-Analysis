@@ -3,15 +3,21 @@ from os.path import isfile
 from typing import List, Union
 
 from gdown import download
-from tensorflow.keras.backend import int_shape
-from tensorflow.keras.models import Model
-from tensorflow.keras.layers import (Activation, Input, Conv2D, 
-    BatchNormalization, MaxPooling2D, Dropout, Dense, Concatenate, Lambda, 
-    GlobalAveragePooling2D, add)
 from numpy import ndarray, float64
 
 import utils.constants as C
-import utils.functions as functions
+from utils.functions import get_deepface_home, get_tf_major_version
+
+if get_tf_major_version() == 1:
+    from keras.backend import int_shape
+    from keras.models import Model
+    from keras.layers import (Activation, Input, Conv2D, BatchNormalization, 
+        MaxPooling2D, Dropout, Dense, Concatenate, Lambda, GlobalAveragePooling2D, add)
+else:
+    from tensorflow.keras.backend import int_shape
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import (Activation, Input, Conv2D, BatchNormalization, 
+        MaxPooling2D, Dropout, Dense, Concatenate, Lambda, GlobalAveragePooling2D, add)
 
 
 class BaseModel(ABC):
@@ -767,11 +773,11 @@ class FaceNetBase(FacialRecognitionBase):
             model (Model)"""
         if self.__class__.__name__ == "FaceNet128dClient":
             model = FaceNetBase._inception_res_netV2()
-            output = functions.get_deepface_home() + C.PATH_WEIGHTS_FACENET
+            output = get_deepface_home() + C.PATH_WEIGHTS_FACENET
         else:
             model = FaceNetBase._inception_res_netV2(512)
             url = C.DOWNLOAD_URL_FACENET512
-            output = functions.get_deepface_home() + C.PATH_WEIGHTS_FACENET512
+            output = get_deepface_home() + C.PATH_WEIGHTS_FACENET512
         self._download(url, output)
         model.load_weights(output)
         return model

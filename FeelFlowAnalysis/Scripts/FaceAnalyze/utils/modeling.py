@@ -1,7 +1,11 @@
-from tensorflow.keras.models import Model
-
 import models.face_attributes as face_attributes
 import models.recognition_models as recognition_models
+from utils.functions import get_tf_major_version
+
+if get_tf_major_version() == 1:
+    from keras.models import Model
+else:
+    from tensorflow.keras.models import Model
 
 
 def build_model(model_name: str) -> Model:

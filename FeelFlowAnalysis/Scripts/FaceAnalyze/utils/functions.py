@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Tuple, Union
 
 import numpy as np
+import tensorflow as tf
 from numba import njit
 
 import utils.constants as C
@@ -14,6 +15,10 @@ def get_deepface_home() -> str:
     Returns:
         str: the home directory."""
     return str(os.getenv(C._DEEPFACE_HOME, str(Path.home())))
+
+
+def get_tf_major_version() -> int:
+    return int(tf.__version__.split(".", maxsplit=1)[0])
 
 
 def initialize_folder() -> None:
@@ -52,7 +57,7 @@ def find_threshold(model_name: str, distance_metric: str) -> float:
     return thresholds.get(model_name, base_threshold).get(distance_metric, 0.4)
 
 
-@njit
+
 def normalize_input(img: np.ndarray, normalization: str = "base") -> np.ndarray:
     """Normalize input image.
 

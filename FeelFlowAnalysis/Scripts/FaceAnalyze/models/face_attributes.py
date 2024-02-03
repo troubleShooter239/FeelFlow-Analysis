@@ -1,13 +1,19 @@
 import cv2
 import numpy as np
-from tensorflow.keras.models import Model, Sequential
-from tensorflow.keras.layers import (Convolution2D, Flatten, Activation, Conv2D,
-    MaxPooling2D, AveragePooling2D, Flatten, Dense, Dropout)
 
 import utils.constants as C
 from base.base_models import AttributeModelBase
 from models.recognition_models import VggFaceClient
-from utils.functions import get_deepface_home
+from utils.functions import get_deepface_home, get_tf_major_version
+
+if get_tf_major_version() == 1:
+    from keras.models import Model, Sequential
+    from keras.layers import (Convolution2D, Flatten, Activation, Conv2D, MaxPooling2D, 
+        AveragePooling2D, Flatten, Dense, Dropout)
+else:
+    from tensorflow.keras.models import Model, Sequential
+    from tensorflow.keras.layers import (Convolution2D, Flatten, Activation, Conv2D,
+        MaxPooling2D, AveragePooling2D, Flatten, Dense, Dropout)
 
 
 class ApparentAgeClient(AttributeModelBase):

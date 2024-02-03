@@ -7,8 +7,7 @@ import cv2
 import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS
-from tensorflow.keras.models import Model
-from tensorflow.keras.preprocessing import image
+from PIL.TiffImagePlugin import IFDRational
 
 import utils.functions as F
 from detectors.opencv_client import DetectorWrapper
@@ -16,6 +15,15 @@ from loaders.image_loader import load_image
 from utils.distance import find_cosine, find_euclidean
 from utils.modeling import build_model
 from models.face_attributes import EmotionClient, GenderClient, RaceClient
+
+if F.get_tf_major_version() == 1:
+    from keras.models import Model
+    from keras.preprocessing import image
+else:
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.preprocessing import image
+
+F.initialize_folder()
 
 
 def process_age(predictions) -> Dict[str, int]:
@@ -106,9 +114,10 @@ def analyze(img: Union[str, np.ndarray],
                     }
             ]"""
     funcs = {"age": process_age, "emotion": process_emotion, "gender": process_gender, "race": process_race}
-    
-    img_objs = extract_faces(img, (224, 224), False, enforce_detection, align)
-
+    try:
+        img_objs = extract_faces(img, (224, 224), False, enforce_detection, align)
+    except ValueError:
+        return "{}"
     models: Dict[str, Model] = {a: build_model(a.capitalize()) for a, s in loads(actions).items() if s}
     resp_objects = []
     # TODO: Make it parallel
@@ -349,33 +358,78 @@ def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray],
     }
 
 
-def get_image_metadata(image_path):
-    with Image.open(image_path) as img:                
+# def get_gps(exif_data) -> Tuple:
+#     if 'GPSInfo' in exif_data:
+#         gps_info = exif_data['GPSInfo']
+#         lat_ref = gps_info[1]
+#         lat = gps_info[2]
+#         lon_ref = gps_info[3]
+#         lon = gps_info[4]
+#         lat_deg = lat[0][0] / float(lat[0][1])
+#         lat_min = lat[1][0] / float(lat[1][1])
+#         lat_sec = lat[2][0] / float(lat[2][1])
+#         lon_deg = lon[0][0] / float(lon[0][1])
+#         lon_min = lon[1][0] / float(lon[1][1])
+#         lon_sec = lon[2][0] / float(lon[2][1])
+#         if lat_ref == 'S':
+#             lat_deg = -lat_deg
+#         if lon_ref == 'W':
+#             lon_deg = -lon_deg
+#         return lat_deg, lat_min, lat_sec, lon_deg, lon_min, lon_sec
+#     return ()
+# from PIL import Image
+# import piexif
+
+
+# img = Image.open("D:/1.jpg")
+# exif_dict = piexif.load(img.info['exif'])
+# piexif.GPSIFD.GPSLatitude
+# if 'GPS' in exif_dict:
+#     gps = exif_dict['GPS']
+#     print(gps)
+#     latitude = gps[2][0][0] / float(gps[2][0][1])
+#     longitude = gps[4][0][0] / float(gps[4][0][1])
+#     print('Широта:', latitude)
+#     print('Долгота:', longitude)
+# else:
+#     print('Геоданные отсутствуют')
+
+
+# TODO: Converting to ndarray is bring's losing img information
+def get_image_metadata(image: Union[str, np.ndarray]) -> str:
+    with Image.open(image) as i:
+        try:
+            mime = Image.MIME[i.format]
+        except KeyError:
+            mime = None
         data = {
-            "image_size": img.size,
-            "file_type": img.format,
-            "mime": Image.MIME[img.format],
-            "time_created": ctime(path.getctime(image_path)),
-            "name": path.basename(image_path),
-            "size": path.getsize(image_path),
-            "access_time": ctime(path.getatime(image_path)),
-            "location": path.abspath(image_path),
-            "inode_change_time": ctime(path.getctime(image_path)),
-            "permission": oct(stat(image_path).st_mode)[-4:],
-            "type_extension": path.splitext(image_path)[1][1:],
-            "band_names": img.getbands(),
-            "bbox": img.getbbox(),
-            #"dpi": img.info["dpi"],
-            #"icc_profile": img.info["icc_profile"],
-            "megapixels": round(img.size[0] * img.size[1] / 1000000, 2),
+            "image_size": i.size,
+            "file_type": i.format,
+            "mime": mime,
+            #"time_created": ctime(path.getctime(i)),
+            #"name": path.basename(i),
+            #"size": path.getsize(i),
+            #"access_time": ctime(path.getatime(i)),
+            #"location": path.abspath(i),
+            #"inode_change_time": ctime(path.getctime(i)),
+            #"permission": oct(stat(i).st_mode)[-4:],
+            #"type_extension": path.splitext(i)[1][1:],
+            "band_names": i.getbands(),
+            "bbox": i.getbbox(),
+            #"icc_profile": i.info["icc_profile"],
+            "megapixels": round(i.size[0] * i.size[1] / 1000000, 2),
         }
-        #data.update({TAGS.get(t, t): v for t, v in img.getexif().items()})
+        data["dpi"] = tuple(map(float, i.info["dpi"]))
+        exif_data = {TAGS.get(t, t): float(v) if isinstance(v, IFDRational) else v for t, v in i.getexif().items()}
+        data.update(exif_data)
+        data["GPSInfo"] = get_gps(exif_data)
+    
     return dumps(data, indent=2)
 
 
 # print(get_image_metadata("D:/1.jpg"))
 
-# start = time()
-# a = analyze("C:/1.jpg")
-# print(time() - start)
+# #start = time()
+# a = analyze("D:/1.jpg")
+# #print(time() - start)
 # print(a)
