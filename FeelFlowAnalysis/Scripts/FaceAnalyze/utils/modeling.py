@@ -9,14 +9,6 @@ else:
 
 
 def build_model(model_name: str) -> Model:
-    """This function builds a deepface model
-    Parameters:
-        model_name (string): face recognition or facial attribute model
-        VGG-Face, Facenet, OpenFace, DeepFace, DeepID for face recognition
-        Age, Gender, Emotion, Race for facial attributes
-
-    Returns:
-            built deepface model ( (tf.)keras.models.Model )"""
     global model_obj
     if not "model_obj" in globals():
         model_obj = dict()

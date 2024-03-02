@@ -30,24 +30,13 @@ else:
 
 
 class ArcFaceClient(FacialRecognitionBase):
-    """ArcFace model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "ArcFace"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """
-        Find embeddings with ArcFace model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector
-        """
         return self.model(img, training=False).numpy()[0].tolist()
 
     def load_model(self, url: str = C.DOWNLOAD_URL_ARCFACE) -> Model:
-        """Construct ArcFace model, download its weights and load
-        Returns:
-            model (Model)"""
         base_model = ArcFaceClient.ResNet34()
         inputs = base_model.inputs[0]
         arcface_model = base_model.outputs[0]
@@ -66,9 +55,6 @@ class ArcFaceClient(FacialRecognitionBase):
 
     @staticmethod
     def ResNet34() -> Model:
-        """ResNet34 model
-        Returns:
-            model (Model)"""
         img_input = Input(shape=(112, 112, 3))
         x = ZeroPadding2D(padding=1, name="conv1_pad")(img_input)
         x = Conv2D(64, 3, strides=1, use_bias=False, 
@@ -128,20 +114,13 @@ class ArcFaceClient(FacialRecognitionBase):
 
 
 class DeepFaceClient(FacialRecognitionBase):
-    """Fb's DeepFace model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "DeepFace"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with OpenFace model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
     def load_model(self, url: str = C.DOWNLOAD_URL_DEEPFACE) -> Model:
-        """Construct DeepFace model, download its weights and load"""
         base_model = Sequential()
         base_model.add(Convolution2D(32, (11, 11), activation="relu", 
                                      name="C1", input_shape=(152, 152, 3)))
@@ -166,20 +145,13 @@ class DeepFaceClient(FacialRecognitionBase):
 
 
 class DeepIdClient(FacialRecognitionBase):
-    """DeepId model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "DeepId"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with DeepId model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
     def load_model(self, url: str = C.DOWNLOAD_URL_DEEPID) -> Model:
-        """Construct DeepId model, download its weights and load"""
         myInput = Input(shape=(55, 47, 3))
         x = Conv2D(20, (4, 4), name="Conv1", activation="relu", input_shape=(55, 47, 3))(myInput)
         x = MaxPooling2D(pool_size=2, strides=2, name="Pool1")(x)
@@ -222,16 +194,10 @@ class DlibMetaData:
 
 
 class DlibClient(FacialRecognitionBase):
-    """Dlib model class"""
     def __init__(self) -> None:
         self.model, self.model_name = DlibResNet(), "Dlib"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with Dlib model - different than regular models
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         if len(img.shape) == 4:
             img = img[0]
 
@@ -245,50 +211,29 @@ class DlibClient(FacialRecognitionBase):
 
 
 class FaceNet128dClient(FaceNetBase):
-    """FaceNet-128d model class"""
     def __init__(self) -> None:
         self.model, self.model_name = super().load_model(), "FaceNet-128d"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with FaceNet-128d model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
 
 class FaceNet512dClient(FaceNetBase):
-    """FaceNet-512d model class"""
     def __init__(self) -> None:
         self.model, self.model_name = super().load_model(), "FaceNet-512d"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with FaceNet-512d model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
 
 class OpenFaceClient(FacialRecognitionBase):
-    """OpenFace model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "OpenFace"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with OpenFace model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model(img, training=False).numpy()[0].tolist()
 
     def load_model(self, url: str = C.DOWNLOAD_URL_OPENFACE) -> Model:
-        """Consturct OpenFace model, download its weights and load
-        Returns:
-            model (Model)"""
         myInput = Input(shape=(96, 96, 3))
         x = ZeroPadding2D(padding=(3, 3), input_shape=(96, 96, 3))(myInput)
         x = Conv2D(64, (7, 7), strides=(2, 2), name="conv1")(x)
@@ -527,48 +472,31 @@ class SFaceWrapper:
         input_shape, output_shape = (None, 112, 112, 3), (None, 1, 128)
 
     def __init__(self, model_path: str) -> None:
-        """SFace wrapper covering model construction, layer infos and predict"""
         self.model, self.layers = FaceRecognizerSF.create(model_path, "", 0, 0), [self.Layer()]
 
 
 class SFaceClient(FacialRecognitionBase):
-    """SFace model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "SFace"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with SFace model - different than regular models
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return self.model.model.feature((img[0] * 255).astype(uint8))[0].tolist()
 
     def load_model(self, url: str = C.DOWNLOAD_URL_SFACE) -> SFaceWrapper:
-        """Construct SFace model, download its weights and load"""
         output = F.get_deepface_home() + C.PATH_WEIGHTS_SFACE
         self._download(url, output)
         return SFaceWrapper(output)
 
 
 class VggFaceClient(FacialRecognitionBase):
-    """VGG-Face model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "VGG-Face"
 
     def find_embeddings(self, img: ndarray) -> List[float]:
-        """Find embeddings with VGG-Face model
-        Args:
-            img (np.ndarray): pre-loaded image in BGR
-        Returns
-            embeddings (list): multi-dimensional vector"""
         return F.l2_normalize(self.model(img, training=False).numpy()[0].tolist()).tolist()
 
     @staticmethod
     def base_model() -> Sequential:
-        """Base model of VGG-Face being used for classification - not to find embeddings
-        Returns:
-            model (Sequential): model was trained to classify 2622 identities"""
         model = Sequential()
         model.add(ZeroPadding2D((1, 1), input_shape=(224, 224, 3)))
         model.add(Convolution2D(64, (3, 3), activation="relu"))
@@ -611,9 +539,6 @@ class VggFaceClient(FacialRecognitionBase):
         return model
 
     def load_model(self, url: str = C.DOWNLOAD_URL_VGGFACE) -> Model:
-        """Final VGG-Face model being used for finding embeddings
-        Returns:
-            model (Model): returning 4096 dimensional vectors"""
         model = VggFaceClient.base_model()
         output = F.get_deepface_home() + C.PATH_WEIGHTS_VGGFACE
         self._download(url, output)

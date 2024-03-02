@@ -26,7 +26,8 @@ class BaseModel(ABC):
         self.model_name: str
 
     @abstractmethod 
-    def load_model(self, url: str) -> Model: pass
+    def load_model(self, url: str) -> Model: 
+        pass
 
     @staticmethod
     def _download(url: str, output: str) -> None:
@@ -36,23 +37,21 @@ class BaseModel(ABC):
 
 class AttributeModelBase(BaseModel):
     @abstractmethod
-    def predict(self, img: ndarray) -> Union[ndarray, float64]: pass
+    def predict(self, img: ndarray) -> Union[ndarray, float64]: 
+        pass
 
 
 class FacialRecognitionBase(BaseModel):
     @abstractmethod 
-    def find_embeddings(self, img: ndarray) -> List[float]: pass
+    def find_embeddings(self, img: ndarray) -> List[float]: 
+        pass
 
 
 class FaceNetBase(FacialRecognitionBase):
     @staticmethod
     def _inception_res_netV2(dimension: int = 128) -> Model:
-        """InceptionResNetV2 model
-        Args:
-            dimension (int): number of dimensions in the embedding layer
-        Returns:
-            model (Model)"""
-        def scaling(x, scale): return x * scale
+        def scaling(x, scale): 
+            return x * scale
         
         inputs = Input(shape=(160, 160, 3))
         x = Conv2D(32, 3, strides=2, padding="valid", use_bias=False, name="Conv2d_1a_3x3")(inputs)
@@ -765,12 +764,6 @@ class FaceNetBase(FacialRecognitionBase):
         return Model(inputs, x, name="inception_resnet_v1")
 
     def load_model(self, url: str = C.DOWNLOAD_URL_FACENET) -> Model:
-        """Construct FaceNet model (128d or 512d), download its weights and load
-        Args:
-            dimension (int): construct FaceNet-128d or FaceNet-512d models
-            url (str): URL to the weight file
-        Returns:
-            model (Model)"""
         if self.__class__.__name__ == "FaceNet128dClient":
             model = FaceNetBase._inception_res_netV2()
             output = get_deepface_home() + C.PATH_WEIGHTS_FACENET

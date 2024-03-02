@@ -1,31 +1,32 @@
 import os
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 import tensorflow as tf
+from cv2 import COLOR_BGR2GRAY, resize, cvtColor
 from numba import njit
+from detectors.opencv_client import DetectorWrapper
+from loaders.image_loader import load_image
 
 import utils.constants as C
-
-
-def get_deepface_home() -> str:
-    """Get the home directory for storing weights and models.
-
-    Returns:
-        str: the home directory."""
-    return str(os.getenv(C._DEEPFACE_HOME, str(Path.home())))
-
+from utils.modeling import build_model
 
 def get_tf_major_version() -> int:
     return int(tf.__version__.split(".", maxsplit=1)[0])
 
 
-def initialize_folder() -> None:
-    """Initialize the folder for storing weights and models.
+if get_tf_major_version() == 1:
+    from keras.preprocessing import image
+else:
+    from tensorflow.keras.preprocessing import image
 
-    Raises:
-        OSError: if the folder cannot be created."""
+
+def get_deepface_home() -> str:
+    return str(os.getenv(C._DEEPFACE_HOME, str(Path.home())))
+
+
+def initialize_folder() -> None:
     deepFaceHomePath = get_deepface_home() + "/.deepface"
     if not os.path.exists(deepFaceHomePath):
         os.makedirs(deepFaceHomePath, exist_ok=True)
@@ -59,15 +60,6 @@ def find_threshold(model_name: str, distance_metric: str) -> float:
 
 
 def normalize_input(img: np.ndarray, normalization: str = "base") -> np.ndarray:
-    """Normalize input image.
-
-    Args:
-        img (numpy array): the input image.
-        normalization (str, optional): the normalization technique. Defaults to "base",
-        for no normalization.
-
-    Returns:
-        numpy array: the normalized image."""
     if normalization == "base":
         return img
     img *= 255
@@ -94,13 +86,6 @@ def normalize_input(img: np.ndarray, normalization: str = "base") -> np.ndarray:
 
 
 def find_size(model_name: str) -> Tuple[int, int]:
-    """Find the target size of the model.
-
-    Args:
-        model_name (str): the model name.
-
-    Returns:
-        tuple: the target size."""
     sizes = {
         "VGG-Face": (224, 224),
         "Facenet": (160, 160),
@@ -116,3 +101,92 @@ def find_size(model_name: str) -> Tuple[int, int]:
         return sizes[model_name]
     except KeyError:
         return (0, 0)
+
+
+def represent(img_path: Union[str, np.ndarray], model_name: str = "VGG-Face", 
+              enforce_detection: bool = True, detector_backend: str = "opencv",
+              align: bool = True, normalization: str = "base") -> List[Dict[str, Any]]:
+    model = build_model(model_name)
+    target_size = find_size(model_name)
+    if detector_backend != "skip":
+        img_objs = extract_faces(img_path, (target_size[1], target_size[0]), 
+                                 detector_backend, False, enforce_detection, align=align)
+    else:
+        img, _ = load_image(img_path)
+        if len(img.shape) == 4:
+            img = img[0]
+        if len(img.shape) == 3:
+            img = resize(img, target_size)
+            img = np.expand_dims(img, axis=0)
+            if img.max() > 1:
+                img = (img.astype(np.float32) / 255.0).astype(np.float32)
+
+        img_objs = [(img, {"x": 0, "y": 0, "w": img.shape[1], "h": img.shape[2]}, 0)]
+    
+    resp_objs = []
+    for i, r, c in img_objs:
+        e = model.find_embeddings(normalize_input(i, normalization))
+        resp_obj = {"embedding": e, "facial_area": r, "face_confidence": c}
+        resp_objs.append(resp_obj)
+
+    return resp_objs
+
+
+def extract_faces(img: Union[str, np.ndarray], target_size: tuple = (224, 224), 
+                  grayscale: bool = False, enforce_detection: bool = True, 
+                  align: bool = True) -> List[Tuple[np.ndarray, Dict[str, int], float]]:
+    img, img_name = load_image(img)
+
+    face_objs = DetectorWrapper.detect_faces(img, align)
+
+    if len(face_objs) == 0 and enforce_detection:
+        if img_name is not None:
+            raise ValueError(f"Face could not be detected in {img_name}."
+                             "Please confirm that the picture is a face photo "
+                             "or consider to set enforce_detection param to False.")
+        else:
+            raise ValueError("Face could not be detected. Please confirm that the "
+                             "picture is a face photo or consider to set "
+                             "enforce_detection param to False.")
+
+    img_region = [0, 0, img.shape[1], img.shape[0]]
+    if len(face_objs) == 0 and not enforce_detection:
+        face_objs = [(img, img_region, 0)]
+
+    extracted_faces = []
+    for current_img, reg, confidence in face_objs:
+        if current_img.shape[0] < 0 or current_img.shape[1] < 0:
+            continue
+
+        if grayscale:
+            current_img = cvtColor(current_img, COLOR_BGR2GRAY)
+
+        factor = min(target_size[0] / current_img.shape[0], 
+                     target_size[1] / current_img.shape[1])
+
+        current_img = resize(current_img, 
+                                (int(current_img.shape[1] * factor), 
+                                int(current_img.shape[0] * factor)))
+
+        diff_0 = target_size[0] - current_img.shape[0]
+        diff_1 = target_size[1] - current_img.shape[1]
+        
+        if grayscale:
+            current_img = np.pad(current_img, ((diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2)), "constant")
+        else:
+            current_img = np.pad(current_img, ((diff_0 // 2, diff_0 - diff_0 // 2),
+                                (diff_1 // 2, diff_1 - diff_1 // 2), (0, 0)), "constant")
+
+        if current_img.shape[0:2] != target_size:
+            current_img = resize(current_img, target_size)
+
+        img_pixels = np.expand_dims(image.img_to_array(current_img), axis=0) / 255
+        regs = {"x": int(reg[0]), "y": int(reg[1]), "w": int(reg[2]), "h": int(reg[3])}
+        extracted_faces.append((img_pixels, regs, confidence))
+
+    if len(extracted_faces) == 0 and enforce_detection:
+        raise ValueError(f"Detected face shape is {img.shape}. "
+                         "Consider to set enforce_detection arg to False.")
+
+    return extracted_faces

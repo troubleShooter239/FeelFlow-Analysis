@@ -7,14 +7,10 @@ from base.base_detector import DetectorBase, ndarray, List, Tuple
 
 
 class OpenCvClient(DetectorBase):
-    """Class to cover common face detection functionalitiy for OpenCv backend"""
     def __init__(self):
         self.model = self.build_model()
 
     def build_model(self) -> dict:
-        """Build opencv's face and eye detector models
-        Returns:
-            model (dict): including face_detector and eye_detector keys"""
         return {
             "face_detector": self.__build_cascade("haarcascade"),
             "eye_detector": self.__build_cascade("haarcascade_eye")
@@ -22,25 +18,6 @@ class OpenCvClient(DetectorBase):
 
     def detect_faces(self, img: ndarray, 
                      align: bool = True) -> List[Tuple[ndarray, List[float], float]]:
-        """Detect and align face with opencv
-        Args:
-            face_detector (Any): opencv face detector object
-            img (np.ndarray): pre-loaded image
-            align (bool): default is true
-        Returns:
-            results (List[Tuple[np.ndarray, List[float], float]]): A list of tuples
-                where each tuple contains:
-                - detected_face (np.ndarray): The detected face as a NumPy array.
-                - face_region (List[float]): The image region represented as
-                    a list of floats e.g. [x, y, w, h]
-                - confidence (float): The confidence score associated with the detected face.
-
-        Example:
-            results = [
-                (array(..., dtype=uint8), [110, 60, 150, 380], 0.99),
-                (array(..., dtype=uint8), [150, 50, 299, 375], 0.98),
-                (array(..., dtype=uint8), [120, 55, 300, 371], 0.96),
-            ]"""
         img_region = [0, 0, img.shape[1], img.shape[0]]
         faces = []
         
@@ -69,11 +46,6 @@ class OpenCvClient(DetectorBase):
         return resp
 
     def find_eyes(self, img: ndarray) -> tuple:
-        """Find the left and right eye coordinates of given image
-        Args:
-            img (np.ndarray): given image
-        Returns:
-            left and right eye (tuple)"""
         left_eye = None
         right_eye = None
 
@@ -103,9 +75,6 @@ class OpenCvClient(DetectorBase):
         return left_eye, right_eye
 
     def __build_cascade(self, model_name="haarcascade") -> Any:
-        """Build a opencv face&eye detector models
-        Returns:
-            model (Any)"""
         opencv_path = self.__get_opencv_path()
         if model_name == "haarcascade":
             face_detector_path = opencv_path + "haarcascade_frontalface_default.xml"
@@ -132,9 +101,6 @@ class OpenCvClient(DetectorBase):
         return detector
 
     def __get_opencv_path(self) -> str:
-        """Returns where opencv installed
-        Returns:
-            installation_path (str)"""
         folders = cv2.__file__.split(sep)[0:-1]
         path = folders[0]
         for folder in folders[1:]:
@@ -146,11 +112,6 @@ class OpenCvClient(DetectorBase):
 class DetectorWrapper:
     @staticmethod
     def build_model() -> OpenCvClient:
-        """Build a face detector model
-        Args:
-            detector_backend (str): backend detector name
-        Returns:
-            built detector (Any)"""
         global face_detector_obj
         if not "face_detector_obj" in globals():
             face_detector_obj = {}
@@ -162,23 +123,4 @@ class DetectorWrapper:
 
     @staticmethod
     def detect_faces(img: ndarray, align: bool = True) -> list:
-        """Detect face(s) from a given image
-        Args:
-            detector_backend (str): detector name
-            img (np.ndarray): pre-loaded image
-            alig (bool): enable or disable alignment after detection
-        Returns:
-            results (List[Tuple[np.ndarray, List[float], float]]): A list of tuples
-                where each tuple contains:
-                - detected_face (np.ndarray): The detected face as a NumPy array.
-                - face_region (List[float]): The image region represented as
-                    a list of floats e.g. [x, y, w, h]
-                - confidence (float): The confidence score associated with the detected face.
-
-        Example:
-            results = [
-                (array(..., dtype=uint8), [110, 60, 150, 380], 0.99),
-                (array(..., dtype=uint8), [150, 50, 299, 375], 0.98),
-                (array(..., dtype=uint8), [120, 55, 300, 371], 0.96),
-            ]"""
         return DetectorWrapper.build_model().detect_faces(img=img, align=align)

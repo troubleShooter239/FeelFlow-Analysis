@@ -17,7 +17,6 @@ else:
 
 
 class ApparentAgeClient(AttributeModelBase):
-    """Age model class"""
     def __init__(self) -> None:
         self.model, self.model_name = self.load_model(), "Age"
 
@@ -25,9 +24,6 @@ class ApparentAgeClient(AttributeModelBase):
         return np.sum(self.model.predict(img, verbose=0)[0, :] * np.array(list(range(0, 101))))
 
     def load_model(self, url: str = C.DOWNLOAD_URL_AGE) -> Model:
-        """Construct age model, download its weights and load
-        Returns:
-            model (Model)"""
         model = VggFaceClient.base_model()
         base_out = Sequential()
         base_out = Convolution2D(101, (1, 1), name="predictions")(model.layers[-4].output)
@@ -41,7 +37,6 @@ class ApparentAgeClient(AttributeModelBase):
 
 
 class EmotionClient(AttributeModelBase):
-    """Emotion model class"""
     labels = ["angry", "disgust", "fear", "happy", "sad", "surprise", "neutral"]
 
     def __init__(self):
@@ -54,7 +49,6 @@ class EmotionClient(AttributeModelBase):
         return self.model.predict(img_gray, verbose=0)[0, :]
 
     def load_model(self, url: str = C.DOWNLOAD_URL_EMOTION) -> Sequential:
-        """Construct emotion model, download and load weights"""
         num_classes = 7
         model = Sequential()
         model.add(Conv2D(64, (5, 5), activation="relu", input_shape=(48, 48, 1)))
@@ -78,7 +72,6 @@ class EmotionClient(AttributeModelBase):
 
 
 class GenderClient(AttributeModelBase):
-    """Gender model class"""
     labels = ["Woman", "Man"]
 
     def __init__(self):
@@ -88,9 +81,6 @@ class GenderClient(AttributeModelBase):
         return self.model.predict(img, verbose=0)[0, :]
 
     def load_model(self, url: str = C.DOWNLOAD_URL_GENDER) -> Model:
-        """Construct gender model, download its weights and load
-        Returns:
-            model (Model)"""
         model = VggFaceClient.base_model()
         base_model_output = Sequential()
         base_model_output = Convolution2D(2, (1, 1), name="predictions")(model.layers[-4].output)
@@ -104,7 +94,6 @@ class GenderClient(AttributeModelBase):
 
 
 class RaceClient(AttributeModelBase):
-    """Race model class"""
     labels = ["asian", "indian", "black", "white", "middle eastern", "latino hispanic"]
 
     def __init__(self):
@@ -114,7 +103,6 @@ class RaceClient(AttributeModelBase):
         return self.model.predict(img, verbose=0)[0, :]
 
     def load_model(self, url: str = C.DOWNLOAD_URL_RACE) -> Model:
-        """Construct race model, download its weights and load"""
         model = VggFaceClient.base_model()
         base_model_output = Sequential()
         base_model_output = Convolution2D(6, (1, 1), name="predictions")(model.layers[-4].output)
