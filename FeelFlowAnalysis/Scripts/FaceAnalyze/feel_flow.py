@@ -7,18 +7,14 @@ import numpy as np
 from PIL import Image
 from PIL.ExifTags import TAGS
 from PIL.TiffImagePlugin import IFDRational
+from tensorflow.keras.layers import Model
 
-import utils.functions as F
-from utils.distance import find_cosine, find_euclidean
-from utils.face_processor import processor_methods
-from utils.modeling import build_model
+import commons.functions as F
+from commons.distance import find_cosine, find_euclidean
+from commons.folder_utils import initialize_folder
+from commons.face_processor import processor_methods
 
-if F.get_tf_major_version() == 1:
-    from keras.models import Model
-else:
-    from tensorflow.keras.models import Model
-
-F.initialize_folder()
+initialize_folder()
 
 
 def analyze(img: Union[str, np.ndarray], 
@@ -28,7 +24,7 @@ def analyze(img: Union[str, np.ndarray],
         img_objs = F.extract_faces(img, (224, 224), False, enforce_detection, align)
     except ValueError:
         return "{}"
-    models: Dict[str, Model] = {a: build_model(a.capitalize()) for a, s in loads(actions).items() if s}
+    models: Dict[str, Model] = {a: F.build_model(a.capitalize()) for a, s in loads(actions).items() if s}
     resp_objects = []
     # TODO: Make it parallel
     for img, region, confidence in img_objs:
@@ -121,7 +117,7 @@ def verify(img1: Union[str, np.ndarray], img2: Union[str, np.ndarray],
 
 
 # TODO: Converting to ndarray is bring's losing img information
-def get_image_metadata(image: Union[str, np.ndarray]) -> str:
+def get_image_metadata(image: str) -> str:
     with Image.open(image) as i:
         try:
             mime = Image.MIME[i.format]
@@ -131,6 +127,7 @@ def get_image_metadata(image: Union[str, np.ndarray]) -> str:
             "image_size": i.size,
             "file_type": i.format,
             "mime": mime,
+            "info?": i.info,
             #"time_created": ctime(path.getctime(i)),
             #"name": path.basename(i),
             #"size": path.getsize(i),
@@ -144,15 +141,25 @@ def get_image_metadata(image: Union[str, np.ndarray]) -> str:
             #"icc_profile": i.info["icc_profile"],
             "megapixels": round(i.size[0] * i.size[1] / 1000000, 2),
         }
-        data["dpi"] = tuple(map(float, i.info["dpi"]))
-        exif_data = {TAGS.get(t, t): float(v) if isinstance(v, IFDRational) else v for t, v in i.getexif().items()}
-        data.update(exif_data)
-        data["GPSInfo"] = get_gps(exif_data)
+        #data["dpi"] = tuple(map(float, i.info["dpi"]))
+        #exif_data = {TAGS.get(t, t): float(v) if isinstance(v, IFDRational) else v for t, v in i.getexif().items()}
+        #data.update(exif_data)
+        #data["GPSInfo"] = get_gps(exif_data)
     
     return dumps(data, indent=2)
 
 
-# print(get_image_metadata("D:/1.jpg"))
+import base64
+
+def encode_image_to_base64(image_path):
+    with open(image_path, "rb") as image_file:
+        image_binary = image_file.read()
+        base64_encoded = base64.b64encode(image_binary)
+        base64_string = base64_encoded.decode('utf-8')
+    return base64_string
+
+#print(encode_image_to_base64("C:/Users/lilia/OneDrive/Изображения/2.jpg"))
+# print(get_image_metadata(encode_image_to_base64("C:/Users/lilia/OneDrive/Изображения/2.jpg")))
 
 start = time()
 a = analyze("C:/Users/lilia/OneDrive/Изображения/1.jpg")

@@ -1,38 +1,38 @@
-import os
-from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
-import tensorflow as tf
 from cv2 import COLOR_BGR2GRAY, resize, cvtColor
 from numba import njit
+
+import models.face_attributes as face_attributes
+import models.recognition_models as recognition_models
 from detectors.opencv_client import DetectorWrapper
 from loaders.image_loader import load_image
-
-import utils.constants as C
-from utils.modeling import build_model
-
-def get_tf_major_version() -> int:
-    return int(tf.__version__.split(".", maxsplit=1)[0])
+from .package_utils import Model, image
 
 
-if get_tf_major_version() == 1:
-    from keras.preprocessing import image
-else:
-    from tensorflow.keras.preprocessing import image
-
-
-def get_deepface_home() -> str:
-    return str(os.getenv(C._DEEPFACE_HOME, str(Path.home())))
-
-
-def initialize_folder() -> None:
-    deepFaceHomePath = get_deepface_home() + "/.deepface"
-    if not os.path.exists(deepFaceHomePath):
-        os.makedirs(deepFaceHomePath, exist_ok=True)
-    weightsPath = deepFaceHomePath + "/weights"
-    if not os.path.exists(weightsPath):
-        os.makedirs(weightsPath, exist_ok=True)
+def build_model(model_name: str) -> Model:
+    global model_obj
+    if not "model_obj" in globals():
+        model_obj = dict()
+    models = {
+        "VGG-Face": recognition_models.VggFaceClient,
+        "OpenFace": recognition_models.OpenFaceClient,
+        "Facenet": recognition_models.FaceNet128dClient,
+        "Facenet512": recognition_models.FaceNet512dClient,
+        "DeepFace": recognition_models.DeepFaceClient,
+        "DeepID": recognition_models.DeepIdClient,
+        "Dlib": recognition_models.DlibClient,
+        "ArcFace": recognition_models.ArcFaceClient,
+        "SFace": recognition_models.SFaceClient,
+        "Emotion": face_attributes.EmotionClient,
+        "Age": face_attributes.ApparentAgeClient,
+        "Gender": face_attributes.GenderClient,
+        "Race": face_attributes.RaceClient
+    }
+    if not model_name in model_obj:
+        model_obj[model_name] = models[model_name]()
+    return model_obj[model_name]
 
 
 @njit

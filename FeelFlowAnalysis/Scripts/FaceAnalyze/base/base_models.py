@@ -5,19 +5,12 @@ from typing import List, Union
 from gdown import download
 from numpy import ndarray, float64
 
-import utils.constants as C
-from utils.functions import get_deepface_home, get_tf_major_version
-
-if get_tf_major_version() == 1:
-    from keras.backend import int_shape
-    from keras.models import Model
-    from keras.layers import (Activation, Input, Conv2D, BatchNormalization, 
-        MaxPooling2D, Dropout, Dense, Concatenate, Lambda, GlobalAveragePooling2D, add)
-else:
-    from tensorflow.keras.backend import int_shape
-    from tensorflow.keras.models import Model
-    from tensorflow.keras.layers import (Activation, Input, Conv2D, BatchNormalization, 
-        MaxPooling2D, Dropout, Dense, Concatenate, Lambda, GlobalAveragePooling2D, add)
+import commons.constants as C
+from commons.folder_utils import get_deepface_home
+from commons.package_utils import (
+    Model, Activation, Conv2D, Input, BatchNormalization, MaxPooling2D, Concatenate, 
+    Lambda, int_shape, add, GlobalAveragePooling2D, Dense, Dropout
+)
 
 
 class BaseModel(ABC):
