@@ -1,5 +1,5 @@
 from tensorflow.keras.backend import int_shape, sqrt, l2_normalize
-from tensorflow.keras.engine import training
+from tensorflow.python.keras.engine import training
 from tensorflow.keras.layers import (
     Activation, AveragePooling2D, Add, add, BatchNormalization, Concatenate, 
     concatenate, Conv2D, Convolution2D, Dense, Dropout, Input, Flatten, 

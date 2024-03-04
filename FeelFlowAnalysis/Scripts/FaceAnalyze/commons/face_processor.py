@@ -32,11 +32,3 @@ class FaceProcessor:
             "race": {l: round(100 * p / _sum, 2) for l, p in zip(RaceClient.labels, predictions)},
             "dominant_race": RaceClient.labels[np.argmax(predictions)]
         }
-
-
-processor_methods = {
-    "age": FaceProcessor.age, 
-    "emotion": FaceProcessor.emotion, 
-    "gender": FaceProcessor.gender, 
-    "race": FaceProcessor.race,
-}
