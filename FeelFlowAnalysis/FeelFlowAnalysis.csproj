@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <Folder Include="Scripts\" />
-    <Folder Include="Services\" />
     <Folder Include="wwwroot\Scripts\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MongoDB.Driver.Core" Version="2.24.0" />
   </ItemGroup>
 
 </Project>
