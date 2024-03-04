@@ -9,6 +9,7 @@
   <ItemGroup>
     <Folder Include="Scripts\" />
     <Folder Include="Services\" />
+    <Folder Include="wwwroot\Scripts\" />
   </ItemGroup>
 
 </Project>

@@ -1,3 +1,25 @@
 ﻿@page "/"
 
 <PageTitle>Home</PageTitle>
+<div class="home-container">
+    <p class="text-handler">Upload your photo or video...</p>
+    <div class="upload-button-container">
+        <InputFile OnChange="@HandleFileUplode" id="fileInput" class="input-file" />
+        <label for="fileInput" class="button upload-button">Upload</label>
+    </div>
+</div>
+
+@code {
+
+    async Task HandleFileUplode(InputFileChangeEventArgs eventArgs)
+    {
+        IBrowserFile? file = eventArgs.File;
+
+        if(file != null)
+        {
+            var bytes = new byte[file.Size];
+            await file.OpenReadStream().ReadAsync(bytes);
+        }
+
+    }
+}   
