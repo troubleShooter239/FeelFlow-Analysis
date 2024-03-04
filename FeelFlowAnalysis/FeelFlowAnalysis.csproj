@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <Folder Include="Scripts\" />
+    <Folder Include="wwwroot\Scripts\" />
   </ItemGroup>
 
   <ItemGroup>

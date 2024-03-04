@@ -6,20 +6,58 @@
 
 main {
     flex: 1;
+    background-color: #1E1E1E;
 }
 
 .sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+    background-image: linear-gradient(180deg, #2F2F2F 0%, #2F2F2F 70%);
+    box-shadow: 5px 0px 20px 0px rgba(0, 0, 0, 0.30);
+}
+
+
+.navbar-brand {
+    color: #E6AA30;
+    font-size: 250%;
+    text-decoration: none;
+    margin-left: 4px;
+    margin-top: 40px;
+    font-style: normal;
+    font-weight: 400;
+    line-height: normal;
+}
+
+.button-pos
+{
+    float: right;
+    margin-right: 10px;
+}
+
+.btn-primary {
+    transition-duration: 0.2s;
+    color: #fff;
+    background-color: #E6AA30;
+    border-color: #E6AA30;
+}
+
+.btn-primary:hover
+{
+    background-color: #2F2F2F;
+}
+
+.btn:focus, .btn-link:hover, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #E6AA30;
 }
 
 .top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
+    background-color: #2F2F2F;
+    box-shadow: inset 10px 0 5px rgba(0, 0, 0, 0.19), 5px 0px 20px 0px rgba(0, 0, 0, 0.19);
+    height: 6.65rem;
     display: flex;
+    justify-content: space-between;
     align-items: center;
+    margin-left: 0.7px;
 }
+
 
     .top-row ::deep a, .top-row ::deep .btn-link {
         white-space: nowrap;
@@ -68,11 +106,6 @@ main {
         flex: 1;
         text-align: right;
         width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
     }
 }
 
