@@ -149,8 +149,8 @@ def encode_image_to_base64(image_path):
 
 #print(encode_image_to_base64("C:/Users/lilia/OneDrive/Изображения/2.jpg"))
 #print(get_image_metadata("0xfaaaa"))
-from time import time
-start = time()
-a = analyze("D:/2.jpg", "pencil")
-print(time() - start)
-print(a)
+# from time import time
+# start = time()
+# a = analyze("D:/2.jpg", "pencil")
+# print(time() - start)
+# print(a)
