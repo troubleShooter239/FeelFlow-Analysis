@@ -19,8 +19,20 @@
         {
             var bytes = new byte[file.Size];
             await file.OpenReadStream().ReadAsync(bytes);
-        }
 
-        
+            var base64String = Convert.ToBase64String(bytes);
+            var data = new{
+                b64_img = base64String,
+                actions = new Dictionary<string, bool> { { "age", true }, { "emotion", true }, { "gender", true }, { "race", true } }
+            };
+
+            var json = JsonSerializer.Serialize(data);
+
+            using (var httpClient = new HttpClient())
+            {
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await httpClient.PostAsync("URL", content);
+            }
+        }
     }
 }   
