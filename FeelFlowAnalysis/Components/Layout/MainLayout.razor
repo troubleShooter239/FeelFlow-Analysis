@@ -1,4 +1,8 @@
 ﻿@inherits LayoutComponentBase
+@using FeelFlowAnalysis.Services
+@using FeelFlowAnalysis.Models
+@inject IUserService UserService
+@inject IHashing HashingService
 
 <div class="page">
     <div class="sidebar">
@@ -52,16 +56,16 @@
                     <form action="#">
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input class="form-control" type="text" name="email" id="email" placeholder="example@gmail.com" required />
+                            <input class="form-control" type="text" name="email" id="loginEmail" placeholder="example@gmail.com" @bind="_loginModel.Email" required />
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input class="form-control" type="password" name="password" id="password" placeholder="********" required />
+                            <input class="form-control" type="password" name="password" id="loginPassword" placeholder="********" @bind="_password" required />
                         </div>
                         <div class="m-t-lg">
                             <ul class="list-inline">
                                 <li>
-                                    <input class="btn btn-primary" type="submit" value="Register" />
+                                    <button class="btn btn-primary" @onclick="Authentication">LogIn</button>
                                 </li>
                             </ul>
                         </div>
@@ -98,20 +102,20 @@
                     <form action="#">
                         <div class="form-group">
                             <label for="email">Email</label>
-                            <input class="form-control" type="text" name="email" id="email" placeholder="example@gmail.com" required />
+                            <input class="form-control" type="text" name="email" id="signupEmail" placeholder="example@gmail.com" @bind="_registerModel.Email" required />
                         </div>
                         <div class="form-group">
                             <label for="password">Password</label>
-                            <input class="form-control" type="password" name="password" id="password" placeholder="********" required />
+                            <input class="form-control" type="password" name="password" id="signupPassword" placeholder="********" @bind="_password" required />
                         </div>
                         <div class="form-group">
                             <label for="password">Confirm Password</label>
-                            <input class="form-control" type="password" name="password" id="password" placeholder="********" required />
+                            <input class="form-control" type="password" name="password" id="confirmPassword" placeholder="********" @bind="_confirmPassword" required />
                         </div>
                         <div class="m-t-lg">
                             <ul class="list-inline">
                                 <li>
-                                    <input class="btn btn-primary" type="submit" value="Register" />
+                                    <button class="btn btn-primary" @onclick="Registration">SignUp</button>
                                 </li>
                             </ul>
                         </div>
@@ -121,3 +125,39 @@
         </div>
     </div>
 </div>
+
+@code{
+    private User _loginModel = new();
+    private User _registerModel = new();
+    private string _password = string.Empty;
+    private string _confirmPassword = string.Empty;
+
+    private async Task Authentication()
+    {
+        Console.WriteLine("!!!!!!!!");
+        _loginModel.PasswordHash = HashingService.HashString(_password);
+        var user = await UserService.Authenticate(_loginModel.Email, _loginModel.PasswordHash);
+
+        if (user != null)
+            Console.WriteLine("!!!");
+        else
+            Console.WriteLine("(((");
+    }
+
+    private async Task Registration()
+    {
+        Console.WriteLine("!!!!!!!");
+        if(_password != _confirmPassword)
+            return;
+
+        var user = new User {Email = _registerModel.Email, PasswordHash = HashingService.HashString(_password)};
+
+        if (user != null)
+            Console.WriteLine("!!!");
+        else
+            Console.WriteLine("(((");
+
+        await UserService.Create(user);
+    }
+
+}
