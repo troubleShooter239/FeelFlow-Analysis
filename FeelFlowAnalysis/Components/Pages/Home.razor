@@ -1,6 +1,4 @@
 ﻿@page "/"
-@using System.Text;
-@using System.Text.Json;
 
 <PageTitle>Home</PageTitle>
 <div class="home-container">
@@ -10,10 +8,6 @@
             Upload
             <InputFile OnChange="@OnInputFileChange" />
         </label>
-        @* @if (imageBytes != null)
-        {
-            <img src="@imageSource" alt="Uploaded Image" />
-        } *@
     </div>
 </div>
 
@@ -26,7 +20,7 @@
         Console.WriteLine("Hui");
         var file = e.File;
 
-        if(file == null)
+        if(file is null)
         {
             return;
         }
@@ -48,7 +42,7 @@
             {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
         };
 
-        var jsonContent = JsonSerializer.Serialize(new Models.AnalyzeModel { B64img = imageSource, Actions = values } );
+        var jsonContent = JsonSerializer.Serialize(new Models.API.Analyze.AnalyzeModel { B64img = imageSource, Actions = values } );
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
         using (var client = new HttpClient())
