@@ -7,12 +7,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Scripts\" />
-    <Folder Include="wwwroot\Scripts\" />
+    <PackageReference Include="MongoDB.Driver" Version="2.24.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MongoDB.Driver" Version="2.24.0" />
+    <Folder Include="Models\API\Analyze\" />
   </ItemGroup>
 
 </Project>

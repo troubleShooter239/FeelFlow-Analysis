@@ -4,35 +4,45 @@
 <div class="home-container">
     <p class="text-handler">Upload your photo or video...</p>
     <div class="upload-button-container">
-        <InputFile OnChange="@HandleFileUpload" id="fileInput" class="input-file" />
-        <label for="fileInput" class="button upload-button">Upload</label>
+        <label class="button upload-button">Upload</label>
     </div>
 </div>
 
 @code {
-
-    async Task HandleFileUpload(InputFileChangeEventArgs e)
+    private byte[]? imageBytes;
+    private string? imageSource;
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
     {
         var file = e.File;
 
-        if(file != null)
+        if(file is null)
         {
-            var bytes = new byte[file.Size];
-            await file.OpenReadStream().ReadAsync(bytes);
-
-            var base64String = Convert.ToBase64String(bytes);
-            var data = new{
-                b64_img = base64String,
-                actions = new Dictionary<string, bool> { { "age", true }, { "emotion", true }, { "gender", true }, { "race", true } }
-            };
-
-            var json = JsonSerializer.Serialize(data);
-
-            using (var httpClient = new HttpClient())
-            {
-                var content = new StringContent(json, Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync("URL", content);
-            }
+            return;
         }
+
+        if (!file.ContentType.StartsWith("image"))
+        {
+            return;
+        }
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+            imageBytes = memoryStream.ToArray();
+            imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+        }
+
+        var values = new Dictionary<string, bool>
+        {
+            {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
+        };
+        var jsonContent = JsonSerializer.Serialize(new Models.API.Analyze.AnalyzeModel { B64img = imageSource, Actions = values } );
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+        using (var client = new HttpClient())
+        {
+            var response = await client.PostAsync("http://127.0.0.1:8000/analyze", content);
+        }
+
     }
 }   

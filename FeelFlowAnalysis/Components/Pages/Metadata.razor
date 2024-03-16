@@ -3,3 +3,38 @@
 <PageTitle>Metadata</PageTitle>
 
 <h1>Get metadata</h1>
+
+@code {
+    private byte[]? imageBytes;
+    private string? imageSource;
+    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if(file is null)
+        {
+            return;
+        }
+
+        if (!file.ContentType.StartsWith("image"))
+        {
+            return;
+        }
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+            imageBytes = memoryStream.ToArray();
+            imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+        }
+
+        var jsonContent = JsonSerializer.Serialize(new Models.API.Metadata.MetadataModel { B64img = imageSource } );
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+
+        using (var client = new HttpClient())
+        {
+            var response = await client.PostAsync("http://127.0.0.1:8000/analyze", content);
+        }
+
+    }
+}
