@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FeelFlowAnalysis.Models.API.Analyze;
+namespace FeelFlowAnalysis.Models.ViewModels;
 
 public class AnalyzeModel : IAnalyzeModel
 {

@@ -1,26 +1,26 @@
 ﻿using System.Security.Cryptography;
-using FeelFlowAnalysis.Models;
+using FeelFlowAnalysis.Models.Settings;
+using FeelFlowAnalysis.Services.Interfaces;
 
-namespace FeelFlowAnalysis.Services;
+namespace FeelFlowAnalysis.Services.Implementations;
 
-/// <summary>
-/// Service for hashing passwords and generating salts.
-/// </summary> 
-/// <remarks>
-/// Initializes a new instance of the PasswordHasher class.
-/// </remarks>
-/// <param name="settings">Password hasher settings.</param>
+// Summary:
+//     Provides hashing services.
 public class Hashing(IHashingSettings settings) : IHashing
 {
     private readonly int _saltSize = settings.SaltSize;
     private readonly int _hashSize = settings.HashSize;
     private readonly int _iterations = settings.Iterations;
 
-    /// <summary>
-    /// Hashes the input password using a salt.
-    /// </summary>
-    /// <param name="password">The password to be hashed.</param>
-    /// <returns>The hashed password.</returns>
+    // Summary:
+    //     Hashes a string.
+    //
+    // Parameters:
+    //   password:
+    //     The password to hash.
+    //
+    // Returns:
+    //     The hashed password.
     public string HashString(string password)
     {
         byte[] salt = new byte[_saltSize];
@@ -38,12 +38,18 @@ public class Hashing(IHashingSettings settings) : IHashing
         return Convert.ToBase64String(salt) + ":" + Convert.ToBase64String(hash);
     }
 
-    /// <summary>
-    /// Verifies if the entered password matches the stored hashed password.
-    /// </summary>
-    /// <param name="storedPassword">The stored hashed password.</param>
-    /// <param name="enteredPassword">The entered password for verification.</param>
-    /// <returns>True if the passwords match, otherwise false.</returns>
+    // Summary:
+    //     Verifies if entered password matches stored password hash.
+    //
+    // Parameters:
+    //   storedPassword:
+    //     The hashed password stored in a secure manner.
+    //
+    //   enteredPassword:
+    //     The password entered by the user.
+    //
+    // Returns:
+    //     true if entered password matches stored password hash; otherwise, false.
     public bool VerifyString(string storedPassword, string enteredPassword)
     {
         // Split stored password into salt and hash parts

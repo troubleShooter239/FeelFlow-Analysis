@@ -1,4 +1,4 @@
-﻿namespace FeelFlowAnalysis.Models.API.Verify;
+﻿namespace FeelFlowAnalysis.Models.ViewModels;
 
 public interface IVerifyModel
 {

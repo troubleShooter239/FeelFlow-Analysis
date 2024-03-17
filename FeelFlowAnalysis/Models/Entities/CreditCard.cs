@@ -1,4 +1,4 @@
-﻿namespace FeelFlowAnalysis.Models;
+﻿namespace FeelFlowAnalysis.Models.Entities;
 
 public struct CreditCard : ICreditCard
 {

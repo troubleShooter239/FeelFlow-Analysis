@@ -1,5 +1,7 @@
-﻿using FeelFlowAnalysis.Models;
-using FeelFlowAnalysis.Services;
+﻿using FeelFlowAnalysis.Models.Settings;
+using FeelFlowAnalysis.Services.Implementations;
+using FeelFlowAnalysis.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
@@ -8,7 +10,8 @@ namespace FeelFlowAnalysis;
 public class Startup
 {
     public static void ConfigureServices(WebApplicationBuilder builder)
-        => builder.Services
+    {
+        builder.Services
             // Encryption service
             .Configure<EncryptionSettings>(builder.Configuration.GetSection(nameof(EncryptionSettings)))
             .AddSingleton<IEncryptionSettings>(sp => 
@@ -27,6 +30,22 @@ public class Startup
                 new MongoClient(builder.Configuration.GetValue<string>("DbSettings:ConnectionString")))
             // User service
             .AddScoped<IUserService, UserService>()
-
-            .AddRazorComponents().AddInteractiveServerComponents();       
+            // Authorization service
+            .AddAuthorization()
+            .AddCascadingAuthenticationState()
+            
+            .AddRazorComponents()
+            .AddInteractiveServerComponents();
+            
+            // Cookie auth service
+        builder.Services
+            .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(options => 
+            {
+                options.Cookie.Name = "auth_token";
+                options.LoginPath = "/login";
+                options.Cookie.MaxAge = TimeSpan.FromMinutes(30);
+                options.AccessDeniedPath = "/access-denied";
+            });   
+    }       
 }

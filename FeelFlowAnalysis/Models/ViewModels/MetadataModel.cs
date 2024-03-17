@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace FeelFlowAnalysis.Models.API.Metadata;
+namespace FeelFlowAnalysis.Models.ViewModels;
 
 public class MetadataModel : IMetadataModel
 {

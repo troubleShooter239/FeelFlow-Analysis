@@ -1,4 +1,4 @@
-﻿namespace FeelFlowAnalysis.Models.API.Analyze;
+﻿namespace FeelFlowAnalysis.Models.ViewModels;
 
 public interface IAnalyzeModel
 {

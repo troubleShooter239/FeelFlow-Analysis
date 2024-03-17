@@ -1,7 +1,7 @@
 ﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
-namespace FeelFlowAnalysis.Models;
+namespace FeelFlowAnalysis.Models.Entities;
 
 [BsonIgnoreExtraElements]
 public class User : IUser
