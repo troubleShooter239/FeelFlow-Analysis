@@ -16,6 +16,7 @@ app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+// Add auth to application
 app.UseAuthentication();
 app.UseAuthorization();
 

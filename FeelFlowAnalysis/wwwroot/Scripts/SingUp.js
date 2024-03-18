@@ -1,21 +1,20 @@
-document.addEventListener('DOMContentLoaded', function() {
-    var signupBtn = document.getElementById('signupBtn');
-    var closeBtn = document.getElementById('signupCloseBtn');
-    
-    var signupModal = document.getElementById('signupModal');
-    
+document.addEventListener("DOMContentLoaded", function () {
+  var signupBtn = document.getElementById("signupBtn");
+  var closeBtn = document.getElementById("signupCloseBtn");
 
-    signupBtn.addEventListener('click', function() {
-        signupModal.style.display = 'block';
-    });
+  var signupModal = document.getElementById("signupModal");
 
-    closeBtn.addEventListener('click', function() {
-        signupModal.style.display = 'none';
-    });
+  signupBtn.addEventListener("click", function () {
+    signupModal.style.display = "block";
+  });
 
-    window.addEventListener('click', function(event) {
-        if (event.target == signupModal) {
-            signupModal.style.display = 'none';
-        }
-    });
+  closeBtn.addEventListener("click", function () {
+    signupModal.style.display = "none";
+  });
+
+  window.addEventListener("click", function (event) {
+    if (event.target == signupModal) {
+      signupModal.style.display = "none";
+    }
+  });
 });

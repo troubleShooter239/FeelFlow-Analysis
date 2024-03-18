@@ -28,8 +28,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous authentication operation. The task
     //     result contains the authenticated user, if authentication succeeds; otherwise,
     //     null.
-    public async Task<User> Authenticate(string email, string passwordHash)
-        => (await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)).FirstOrDefault();
+    public async Task<User> Authenticate(string email, string passwordHash) => 
+        (await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)).FirstOrDefault();
 
     // Summary:
     //     Creates a new user.
@@ -40,8 +40,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Create(User user)
-        => await _users.InsertOneAsync(user);
+    public async Task Create(User user) =>
+        await _users.InsertOneAsync(user);
 
     // Summary:
     //     Gets all users.
@@ -49,8 +49,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     // Returns:
     //     A task that represents the asynchronous operation. The task result contains
     //     a list of all users.
-    public async Task<List<User>> GetAll()
-        => (await _users.FindAsync(u => true)).ToList();
+    public async Task<List<User>> GetAll() => 
+        (await _users.FindAsync(u => true)).ToList();
 
     // Summary:
     //     Gets a user by ID.
@@ -62,8 +62,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     // Returns:
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified ID.
-    public async Task<User> Get(string id)
-        => (await _users.FindAsync(user => user.Id == id)).FirstOrDefault();
+    public async Task<User> Get(string id) =>
+        (await _users.FindAsync(user => user.Id == id)).FirstOrDefault();
 
     // Summary:
     //     Gets a user by email.
@@ -75,8 +75,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     // Returns:
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified email.
-    public async Task<User> GetByEmail(string email)
-        => (await _users.FindAsync(user => user.Email == email)).FirstOrDefault();
+    public async Task<User> GetByEmail(string email) => 
+        (await _users.FindAsync(user => user.Email == email)).FirstOrDefault();
 
     // Summary:
     //     Removes a user by ID.
@@ -87,8 +87,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Remove(string id)
-        => await _users.DeleteOneAsync(u => u.Id == id);
+    public async Task Remove(string id) => 
+        await _users.DeleteOneAsync(u => u.Id == id);
 
     // Summary:
     //     Updates an existing user.
@@ -102,6 +102,6 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Update(string id, User user)
-        => await _users.ReplaceOneAsync(u => u.Id == id, user);
+    public async Task Update(string id, User user) => 
+        await _users.ReplaceOneAsync(u => u.Id == id, user);
 }

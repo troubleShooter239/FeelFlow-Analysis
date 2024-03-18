@@ -2,7 +2,7 @@
 
 namespace FeelFlowAnalysis.Models.ViewModels;
 
-public class AnalyzeModel : IAnalyzeModel
+public class AnalyzeViewModel
 {
     [JsonPropertyName("b64_img")]
     public string B64img { get; set; } = string.Empty;

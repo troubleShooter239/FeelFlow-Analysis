@@ -8,11 +8,11 @@
     top: 0.5rem;
     right: 1rem;
     border: 1px solid rgba(255, 255, 255, 0.1);
-    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e") no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
+    background: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='rgba%28255, 255, 255, 0.55%29' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e")
+        no-repeat center/1.75rem rgba(255, 255, 255, 0.1);
 }
 
-.logo-layout
-{
+.logo-layout {
     margin-left: 15px;
 }
 
@@ -21,7 +21,7 @@
 }
 
 .top-row {
-    background-color: #2F2F2F;
+    background-color: #2f2f2f;
 }
 
 .bi {
@@ -51,34 +51,34 @@
     padding-bottom: 0.5rem;
 }
 
-    .nav-item:first-of-type {
-        padding-top: 1rem;
-    }
+.nav-item:first-of-type {
+    padding-top: 1rem;
+}
 
-    .nav-item:last-of-type {
-        padding-bottom: 1rem;
-    }
+.nav-item:last-of-type {
+    padding-bottom: 1rem;
+}
 
-    .nav-item ::deep .nav-link {
-        color: #E6AA30;
-        background: none;
-        border: none;
-        border-radius: 4px;
-        height: 3rem;
-        display: flex;
-        align-items: center;
-        line-height: 3rem;
-        width: 100%;
-    }
+.nav-item ::deep .nav-link {
+    color: #e6aa30;
+    background: none;
+    border: none;
+    border-radius: 4px;
+    height: 3rem;
+    display: flex;
+    align-items: center;
+    line-height: 3rem;
+    width: 100%;
+}
 
 .nav-item ::deep a.active {
     background-color: rgba(145, 125, 85, 0.57);
-    color: #E6AA30;
+    color: #e6aa30;
 }
 
 .nav-item ::deep .nav-link:hover {
-    background-color: rgba(64,64,64,0.57);
-    color: #E6AA30;
+    background-color: rgba(64, 64, 64, 0.57);
+    color: #e6aa30;
 }
 
 .nav-scrollable {
@@ -89,8 +89,7 @@
     display: block;
 }
 
-.nav-menu-title
-{
+.nav-menu-title {
     margin-left: 3px;
 }
 

@@ -1,21 +1,20 @@
-document.addEventListener('DOMContentLoaded', function() {
-    var loginBtn = document.getElementById('loginBtn');
-    var closeBtn = document.getElementById('loginCloseBtn');
-    
-    var loginModal = document.getElementById('loginModal');
-    
+document.addEventListener("DOMContentLoaded", function () {
+  var loginBtn = document.getElementById("loginBtn");
+  var closeBtn = document.getElementById("loginCloseBtn");
 
-    loginBtn.addEventListener('click', function() {
-        loginModal.style.display = 'block';
-    });
+  var loginModal = document.getElementById("loginModal");
 
-    closeBtn.addEventListener('click', function() {
-        loginModal.style.display = 'none';
-    });
+  loginBtn.addEventListener("click", function () {
+    loginModal.style.display = "block";
+  });
 
-    window.addEventListener('click', function(event) {
-        if (event.target == loginModal) {
-            loginModal.style.display = 'none';
-        }
-    });
+  closeBtn.addEventListener("click", function () {
+    loginModal.style.display = "none";
+  });
+
+  window.addEventListener("click", function (event) {
+    if (event.target == loginModal) {
+      loginModal.style.display = "none";
+    }
+  });
 });

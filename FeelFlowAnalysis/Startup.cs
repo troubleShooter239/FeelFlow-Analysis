@@ -9,25 +9,27 @@ namespace FeelFlowAnalysis;
 
 public class Startup
 {
+    // TODO: Add settings.cs 
     public static void ConfigureServices(WebApplicationBuilder builder)
     {
+        var config = builder.Configuration;
         builder.Services
             // Encryption service
-            .Configure<EncryptionSettings>(builder.Configuration.GetSection(nameof(EncryptionSettings)))
+            .Configure<EncryptionSettings>(config.GetSection(nameof(EncryptionSettings)))
             .AddSingleton<IEncryptionSettings>(sp => 
                 sp.GetRequiredService<IOptions<EncryptionSettings>>().Value)
             .AddScoped<IEncryption, Encryption>()
             // Hashing service
-            .Configure<HashingSettings>(builder.Configuration.GetSection(nameof(HashingSettings)))
+            .Configure<HashingSettings>(config.GetSection(nameof(HashingSettings)))
             .AddSingleton<IHashingSettings>(sp => 
                 sp.GetRequiredService<IOptions<HashingSettings>>().Value)
             .AddScoped<IHashing, Hashing>()
             // DB settings
-            .Configure<DbSettings>(builder.Configuration.GetSection(nameof(DbSettings)))
+            .Configure<DbSettings>(config.GetSection(nameof(DbSettings)))
             .AddSingleton<IDbSettings>(sp => 
                 sp.GetRequiredService<IOptions<DbSettings>>().Value)
             .AddSingleton<IMongoClient>(sp =>
-                new MongoClient(builder.Configuration.GetValue<string>("DbSettings:ConnectionString")))
+                new MongoClient(config.GetValue<string>("DbSettings:ConnectionString")))
             // User service
             .AddScoped<IUserService, UserService>()
             // Authorization service
