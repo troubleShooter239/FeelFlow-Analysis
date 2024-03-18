@@ -6,7 +6,7 @@ namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Provides hashing services.
-public class Hashing(IHashingSettings settings) : IHashingService
+public class HashingService(IHashingSettings settings) : IHashingService
 {
     private readonly int _saltSize = settings.SaltSize;
     private readonly int _hashSize = settings.HashSize;

@@ -18,12 +18,12 @@ public class Startup
             .Configure<EncryptionSettings>(config.GetSection(nameof(EncryptionSettings)))
             .AddSingleton<IEncryptionSettings>(sp => 
                 sp.GetRequiredService<IOptions<EncryptionSettings>>().Value)
-            .AddScoped<IEncryption, Encryption>()
+            .AddScoped<IEncryptionService, EncryptionService>()
             // Hashing service
             .Configure<HashingSettings>(config.GetSection(nameof(HashingSettings)))
             .AddSingleton<IHashingSettings>(sp => 
                 sp.GetRequiredService<IOptions<HashingSettings>>().Value)
-            .AddScoped<IHashing, Hashing>()
+            .AddScoped<IHashingService, HashingService>()
             // DB settings
             .Configure<DbSettings>(config.GetSection(nameof(DbSettings)))
             .AddSingleton<IDbSettings>(sp => 
