@@ -2,7 +2,7 @@
 
 // Summary:
 //     Interface for encryption operations.
-public interface IEncryption
+public interface IEncryptionService
 {
     // Summary:
     //     Decrypts an encrypted string.

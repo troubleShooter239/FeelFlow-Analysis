@@ -29,7 +29,9 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     result contains the authenticated user, if authentication succeeds; otherwise,
     //     null.
     public async Task<User> Authenticate(string email, string passwordHash) => 
-        (await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)).FirstOrDefault();
+        await (
+            await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)
+        ).FirstOrDefaultAsync();
 
     // Summary:
     //     Creates a new user.
@@ -50,7 +52,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous operation. The task result contains
     //     a list of all users.
     public async Task<List<User>> GetAll() => 
-        (await _users.FindAsync(u => true)).ToList();
+        await (await _users.FindAsync(u => true))
+            .ToListAsync();
 
     // Summary:
     //     Gets a user by ID.
@@ -63,7 +66,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified ID.
     public async Task<User> Get(string id) =>
-        (await _users.FindAsync(user => user.Id == id)).FirstOrDefault();
+        await (await _users.FindAsync(user => user.Id == id))
+            .FirstOrDefaultAsync();
 
     // Summary:
     //     Gets a user by email.
@@ -76,7 +80,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified email.
     public async Task<User> GetByEmail(string email) => 
-        (await _users.FindAsync(user => user.Email == email)).FirstOrDefault();
+        await (await _users.FindAsync(user => user.Email == email))
+            .FirstOrDefaultAsync();
 
     // Summary:
     //     Removes a user by ID.

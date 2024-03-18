@@ -2,7 +2,7 @@
 
 // Summary:
 //     Interface for hashing operations.
-public interface IHashing
+public interface IHashingService
 {
     // Summary:
     //     Hashes a string.

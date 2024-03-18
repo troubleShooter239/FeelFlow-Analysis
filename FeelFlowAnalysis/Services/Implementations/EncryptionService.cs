@@ -6,7 +6,7 @@ namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Provides encryption services.
-public class Encryption : IEncryption
+public class EncryptionService : IEncryptionService
 {
     private readonly Aes _aes = Aes.Create();
 
@@ -16,7 +16,7 @@ public class Encryption : IEncryption
     // Parameters:
     //   settings:
     //     The encryption settings.
-    public Encryption(IEncryptionSettings settings)
+    public EncryptionService(IEncryptionSettings settings)
     {
         ArgumentNullException.ThrowIfNull(settings);
 

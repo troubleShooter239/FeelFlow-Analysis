@@ -4,9 +4,9 @@ namespace FeelFlowAnalysis.Models.ViewModels;
 
 public class LoginViewModel
 {
-    [Required(AllowEmptyStrings = false, ErrorMessage = "Please enter username")]
-    public required string UserName { get; set; }
+    [Required(AllowEmptyStrings = false, ErrorMessage = "Please enter email")]
+    public string? Email { get; set; }
 
     [Required(AllowEmptyStrings = false, ErrorMessage = "Please enter password")]
-    public required string Password { get; set; }
+    public string? Password { get; set; }
 }

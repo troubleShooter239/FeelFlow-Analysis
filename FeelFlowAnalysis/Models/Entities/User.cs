@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson;
+﻿using FeelFlowAnalysis.Models.Enums;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 
 namespace FeelFlowAnalysis.Models.Entities;
@@ -28,4 +29,9 @@ public class User
     //     Gets or sets the credit card details of the user.
     [BsonElement("card_details")]
     public CreditCard CardDetails { get; set; }
+
+    // Summary:
+    //     Gets or sets the role of the user.
+    [BsonElement("role")]
+    public UserRoles Role { get; set; }
 }
