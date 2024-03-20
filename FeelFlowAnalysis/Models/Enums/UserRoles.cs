@@ -3,5 +3,5 @@
 public enum UserRoles
 {
     Subscription,
-    withoutSubscription,
+    WithoutSubscription,
 }

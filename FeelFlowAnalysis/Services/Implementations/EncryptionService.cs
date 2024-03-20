@@ -20,12 +20,12 @@ public class EncryptionService : IEncryptionService
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        if (string.IsNullOrEmpty(settings.EncryptionKey) || settings.EncryptionKey.Length != 32)
+        if (string.IsNullOrEmpty(settings.EncryptionKey))
             throw new ArgumentException(
-                "Encryption key must be a Base64-encoded 32-byte string.", nameof(settings.EncryptionKey)
+                "Encryption key must be a Base64-encoded string.", nameof(settings.EncryptionKey)
             );
 
-        if (string.IsNullOrEmpty(settings.InitializationVector) || settings.InitializationVector.Length != 16)
+        if (string.IsNullOrEmpty(settings.InitializationVector))
             throw new ArgumentException(
                 "Initialization vector must be a Base64-encoded 16-byte string.", nameof(settings.InitializationVector)
             );

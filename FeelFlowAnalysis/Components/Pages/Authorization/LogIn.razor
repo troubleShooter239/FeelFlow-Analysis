@@ -1,25 +1,27 @@
 ﻿@page "/login"
 @using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using FeelFlowAnalysis.Models.ViewModels
 @using FeelFlowAnalysis.Services.Interfaces
 @inject IEncryptionService encryptionService
 @inject IHashingService hashingService
 @inject IUserService userService
+@inject NavigationManager navigationManager
 
 <PageTitle>Login</PageTitle>
 
-<EditForm Model="@Model" OnValidSubmit="Authenticate" FormName="LogInForm">
+<EditForm Model="@_Model" OnValidSubmit="Authenticate" FormName="LogInForm">
     <DataAnnotationsValidator />
     <div>
         <label>Email</label>
-        <InputText @bind-Value="Model.Email" placeholder="Username" />
-        <ValidationMessage For="() => Model.Email" />
+        <InputText @bind-Value="_Model.Email" placeholder="Email" />
+        <ValidationMessage For="() => _Model.Email" />
     </div>
     <div>
         <label>Password</label>
-        <InputText @bind-Value="Model.Password" placeholder="Password" />
-        <ValidationMessage For="() => Model.Password" />
+        <InputText @bind-Value="_Model.Password" placeholder="Password" />
+        <ValidationMessage For="() => _Model.Password" />
     </div>
     <div>
         <button type="submit">Login</button>
@@ -27,40 +29,41 @@
 </EditForm>
 
 @code {
-    private string errorMessage = string.Empty;
+    private string _errorMessage = string.Empty;
 
     [CascadingParameter]
-    private HttpContext httpContext { get; set; }
+    private HttpContext? _HttpContext { get; set; }
 
     [SupplyParameterFromForm]
-    private LoginViewModel Model { get; set; } = new();
+    private LogInViewModel _Model { get; set; } = new();
 
     private async Task Authenticate()
     {
-        if (Model.Email is null || Model.Password is null)
+        if (_Model.Email is null || _Model.Password is null)
         {
-            errorMessage = "Not all fiealds are filled in.";
+            _errorMessage = "Not all fiealds are filled in.";
             return;
         }
 
         var user = await userService.Authenticate(
-            encryptionService.EncryptString(Model.Email), 
-            hashingService.HashString(Model.Password)
+            encryptionService.EncryptString(_Model.Email), 
+            hashingService.HashString(_Model.Password)
         );
         if (user is null)
         {
-            errorMessage = "This user is not found.";
+            _errorMessage = "This user is not found.";
             return;
         }
 
         var claims = new List<Claim>
         {
-            new Claim(ClaimTypes.Email, Model.Email),
+            new Claim(ClaimTypes.Email, _Model.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString())
         };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
-        // await httpContext.SignInAsync(principal);
+        await _HttpContext!.SignInAsync(principal);
+        navigationManager.NavigateTo("/");
     }
 }

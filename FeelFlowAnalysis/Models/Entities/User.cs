@@ -33,5 +33,5 @@ public class User
     // Summary:
     //     Gets or sets the role of the user.
     [BsonElement("role")]
-    public UserRoles Role { get; set; }
+    public UserRoles Role { get; set; } = UserRoles.WithoutSubscription;
 }

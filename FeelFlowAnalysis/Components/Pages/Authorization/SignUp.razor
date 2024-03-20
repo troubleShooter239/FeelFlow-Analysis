@@ -1,92 +1,79 @@
 ﻿@page "/signup"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using FeelFlowAnalysis.Models.Entities
+@using FeelFlowAnalysis.Models.ViewModels
+@using FeelFlowAnalysis.Services.Interfaces
+@inject IEncryptionService encryptionService
+@inject IHashingService hashingService
+@inject IUserService userService
+@inject NavigationManager navigationManager
 
-<h3>SignUp</h3>
 
-@* <EditForm Model="@Model" OnValidSubmit="Authenticate" FormName="SignUpForm">
+<PageTitle>Signup</PageTitle>
 
-</EditForm> *@
-@* <div class="modal" id="signupModal">
-  <div class="modal-content">
-    <div class="modal-left">
-      <svg
-        width="100"
-        height="100"
-        viewBox="0 0 120 120"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle cx="60" cy="60" r="60" fill="#D9D9D9" opacity="0.7" />
-        <path
-          d="M30.25 33.1C31 39.2 28.35 56.8 35.2 60.15C39.6 62.3 53.25 53.85 55.6 50.15C66.6 32.8 30.25 26.65 30.25 33.1Z"
-          fill="black"
-        />
-        <path
-          d="M54.75 62.8C43.95 73 42.95 76.2 56.25 85C68.35 93 79.75 89.8 86.55 75.9C91.45 65.95 82.75 58.6 74.8 53.4C66.55 48 61.1 56.75 54.75 62.8Z"
-          fill="#E6AA30"
-        />
-      </svg>
-      <div class="modal-heading-container">
-        <h2 class="modal-heading">Welcome to</h2>
-        <h1 class="modal-heading">FeelFlow Analysis</h1>
-      </div>
+<EditForm Model="@_Model" OnValidSubmit="Authenticate" FormName="SignUpForm">
+    <DataAnnotationsValidator />
+    <div>
+        <label>Email</label>
+        <InputText @bind-Value="_Model.Email" placeholder="Email" />
+        <ValidationMessage For="() => _Model.Email" />
     </div>
-    <div class="modal-right">
-      <span class="close" id="signupCloseBtn">&times;</span>
-      <div class="signup__container">
-        <div class="container__child signup__form">
-          <form action="#">
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input
-                class="form-control"
-                type="text"
-                name="email"
-                id="signupEmail"
-                placeholder="example@gmail.com"
-                @bind="_registerModel.Email"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="password">Password</label>
-              <input
-                class="form-control"
-                type="password"
-                name="password"
-                id="signupPassword"
-                placeholder="********"
-                @bind="_password"
-                required
-              />
-            </div>
-            <div class="form-group">
-              <label for="password">Confirm Password</label>
-              <input
-                class="form-control"
-                type="password"
-                name="password"
-                id="confirmPassword"
-                placeholder="********"
-                @bind="_confirmPassword"
-                required
-              />
-            </div>
-            <div class="m-t-lg">
-              <ul class="list-inline">
-                <li>
-                  <button class="btn btn-primary" @onclick="Registration">
-                    SignUp
-                  </button>
-                </li>
-              </ul>
-            </div>
-          </form>
-        </div>
-      </div>
+    <div>
+        <label>Password</label>
+        <InputText @bind-Value="_Model.Password" placeholder="Password" />
+        <ValidationMessage For="() => _Model.Password" />
     </div>
-  </div>
-</div> *@
+    <div>
+        <button type="submit">Login</button>
+    </div>
+</EditForm>
 
 @code {
+    private string _errorMessage = string.Empty;
+    [CascadingParameter]
+    private HttpContext? _HttpContext { get; set; }
 
+    [SupplyParameterFromForm]
+    private SignUpViewModel _Model { get; set; } = new();
+    private async Task Authenticate()
+    {
+        if (_Model.Email is null || _Model.Password is null)
+        {
+            _errorMessage = "Not all fiealds are filled in.";
+            return;
+        }
+
+        var email = encryptionService.EncryptString(_Model.Email);
+        var passwordHash = hashingService.HashString(_Model.Password);
+
+        var user = await userService.Authenticate(
+            email, 
+            passwordHash
+        );
+        if (user is not null)
+        {
+            _errorMessage = "This user is exists.";
+            return;
+        }
+        
+        var newUser = new User 
+        {
+            Email = email,
+            PasswordHash = passwordHash,
+        };
+
+        await userService.Create(newUser);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, _Model.Email),
+            new Claim(ClaimTypes.Role, newUser.Role.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await _HttpContext!.SignInAsync(new ClaimsPrincipal(identity));
+        navigationManager.NavigateTo("/");
+    }
 }

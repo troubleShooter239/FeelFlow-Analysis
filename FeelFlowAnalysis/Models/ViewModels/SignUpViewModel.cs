@@ -2,7 +2,7 @@
 
 namespace FeelFlowAnalysis.Models.ViewModels;
 
-public class LogInViewModel
+public class SignUpViewModel
 {
     [Required(AllowEmptyStrings = false, ErrorMessage = "Please enter email")]
     public string? Email { get; set; }
