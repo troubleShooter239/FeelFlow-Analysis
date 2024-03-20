@@ -1,19 +1,24 @@
 ﻿@page "/"
 @layout Layout.MainLayout
+@using Models.ViewModels
 
 <PageTitle>Home</PageTitle>
 <div class="home-container">
     <p class="text-handler">Upload your photo or video...</p>
     <div class="upload-button-container">
         <label class="button upload-button">Upload</label>
+        @* <EditForm OnValidSubmit="LoadFile">
+            <DataAnnotationsValidator />
+            <InputFile @bind-value="file" />
+        </EditForm> *@
     </div>
 </div>
-@* 
 @code {
     private byte[]? imageBytes;
     private string? imageSource;
-    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    private async Task LoadFile(InputFileChangeEventArgs e)
     {
+        Console.WriteLine("Started!");
         var file = e.File;
 
         if(file is null)
@@ -37,13 +42,14 @@
         {
             {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
         };
-        var jsonContent = JsonSerializer.Serialize(new Models.API.Analyze.AnalyzeModel { B64img = imageSource, Actions = values } );
+        var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel { B64img = imageSource, Actions = values } );
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
         using (var client = new HttpClient())
         {
             var response = await client.PostAsync("http://127.0.0.1:8000/analyze", content);
+            Console.WriteLine(response);
         }
 
     }
-}    *@
+}   
