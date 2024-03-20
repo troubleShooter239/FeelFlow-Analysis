@@ -1,6 +1,5 @@
 ﻿@page "/signup"
 @using System.Security.Claims
-@using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using FeelFlowAnalysis.Models.Entities
 @using FeelFlowAnalysis.Models.ViewModels
@@ -9,7 +8,6 @@
 @inject IHashingService hashingService
 @inject IUserService userService
 @inject NavigationManager navigationManager
-
 
 <PageTitle>Signup</PageTitle>
 
@@ -60,7 +58,7 @@
         
         var newUser = new User 
         {
-            Email = email,
+            Email = email,  
             PasswordHash = passwordHash,
         };
 

@@ -9,10 +9,17 @@
   <main>
     <div class="top-row">
       <a class="navbar-brand" href="">FeelFlow Analysis</a>
-      <div class="button-pos">
-        <button class="btn btn-primary" id="loginBtn">LogIn</button>
-        <button class="btn btn-primary" id="signupBtn">SignUp</button>
-      </div>
+      @if (HttpContext!.User.Identity!.IsAuthenticated)
+      {
+        // Add User and logout btn here...
+      }
+      else
+      {
+        <div class="button-pos">
+          <button class="btn btn-primary" id="loginBtn">LogIn</button>
+          <button class="btn btn-primary" id="signupBtn">SignUp</button>
+        </div>
+      }
     </div>
 
     <article class="content px-4">@Body</article>
@@ -24,3 +31,8 @@
   <a href="" class="reload">Reload</a>
   <a class="dismiss">🗙</a>
 </div>
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+}
