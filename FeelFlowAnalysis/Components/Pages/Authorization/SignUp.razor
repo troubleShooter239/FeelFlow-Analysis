@@ -1,0 +1,78 @@
+﻿@page "/signup"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using FeelFlowAnalysis.Models.Entities
+@using FeelFlowAnalysis.Models.ViewModels
+@using FeelFlowAnalysis.Services.Interfaces
+@inject IEncryptionService encryptionService
+@inject IHashingService hashingService
+@inject IUserService userService
+@inject NavigationManager navigationManager
+
+<PageTitle>Signup</PageTitle>
+
+<EditForm Model="@_Model" OnValidSubmit="Authenticate" FormName="SignUpForm">
+    <DataAnnotationsValidator />
+    <div>
+        <label>Email</label>
+        <InputText @bind-Value="_Model.Email" placeholder="Email" />
+        <ValidationMessage For="() => _Model.Email" />
+    </div>
+    <div>
+        <label>Password</label>
+        <InputText @bind-Value="_Model.Password" placeholder="Password" />
+        <ValidationMessage For="() => _Model.Password" />
+    </div>
+    <div>
+        <button type="submit">Login</button>
+    </div>
+</EditForm>
+
+@code {
+    private string _errorMessage = string.Empty;
+    
+    [CascadingParameter]
+    private HttpContext? _HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    private SignUpViewModel _Model { get; set; } = new();
+    private async Task Authenticate()
+    {
+        if (_Model.Email is null || _Model.Password is null)
+        {
+            _errorMessage = "Not all fiealds are filled in.";
+            return;
+        }
+
+        var email = encryptionService.EncryptString(_Model.Email);
+        var passwordHash = hashingService.HashString(_Model.Password);
+
+        var user = await userService.Authenticate(
+            email, 
+            passwordHash
+        );
+        if (user is not null)
+        {
+            _errorMessage = "This user is exists.";
+            return;
+        }
+        
+        var newUser = new User 
+        {
+            Email = email,  
+            PasswordHash = passwordHash,
+        };
+
+        await userService.Create(newUser);
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, _Model.Email),
+            new Claim(ClaimTypes.Role, newUser.Role.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        await _HttpContext!.SignInAsync(new ClaimsPrincipal(identity));
+        navigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,68 @@
+﻿@page "/login"
+@using System.Security.Claims
+@using Microsoft.AspNetCore.Authentication.Cookies
+@using FeelFlowAnalysis.Models.ViewModels
+@using FeelFlowAnalysis.Services.Interfaces
+@inject IEncryptionService encryptionService
+@inject IHashingService hashingService
+@inject IUserService userService
+@inject NavigationManager navigationManager
+
+<PageTitle>Login</PageTitle>
+
+<EditForm Model="@_Model" OnValidSubmit="Authenticate" FormName="LogInForm">
+    <DataAnnotationsValidator />
+    <div>
+        <label>Email</label>
+        <InputText @bind-Value="_Model.Email" placeholder="Email" />
+        <ValidationMessage For="() => _Model.Email" />
+    </div>
+    <div>
+        <label>Password</label>
+        <InputText @bind-Value="_Model.Password" placeholder="Password" />
+        <ValidationMessage For="() => _Model.Password" />
+    </div>
+    <div>
+        <button type="submit">Login</button>
+    </div>
+</EditForm>
+
+@code {
+    private string _errorMessage = string.Empty;
+
+    [CascadingParameter]
+    private HttpContext? _HttpContext { get; set; }
+
+    [SupplyParameterFromForm]
+    private LogInViewModel _Model { get; set; } = new();
+
+    private async Task Authenticate()
+    {
+        if (_Model.Email is null || _Model.Password is null)
+        {
+            _errorMessage = "Not all fiealds are filled in.";
+            return;
+        }
+
+        var user = await userService.Authenticate(
+            encryptionService.EncryptString(_Model.Email), 
+            hashingService.HashString(_Model.Password)
+        );
+        if (user is null)
+        {
+            _errorMessage = "This user is not found.";
+            return;
+        }
+
+        var claims = new List<Claim>
+        {
+            new Claim(ClaimTypes.Email, _Model.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
+        };
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await _HttpContext!.SignInAsync(principal);
+        navigationManager.NavigateTo("/");
+    }
+}

@@ -1,0 +1,67 @@
+﻿@page "/"
+@layout Layout.MainLayout
+@using Models.ViewModels
+@rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<PageTitle>Home</PageTitle>
+<div class="home-container">
+    <p class="text-handler">Upload your photo or video...</p>
+    <div class="upload-button-container">
+        @if (imageBytes is not null)
+        {
+            // Add img and css
+        }
+        @if (data is not null)
+        {
+            <p>@data</p>
+        }
+        <label class="button upload-button">
+            Upload
+            <InputFile OnChange="LoadFile" accept="image/*" />
+        </label>
+    </div>
+</div>
+
+@code {
+    private byte[]? imageBytes;
+    private string? imageSource;
+    private string? data;
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        if(file is null)
+        {
+            return;
+        }
+
+        if (!file.ContentType.StartsWith("image"))
+        {
+            return;
+        }
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await file.OpenReadStream().CopyToAsync(memoryStream);
+            imageBytes = memoryStream.ToArray();
+            imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+        }
+
+        var values = new Dictionary<string, bool>
+        {
+            {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
+        };
+        var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel { B64img = imageSource, Actions = values } );
+        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        using (var client = new HttpClient())
+        {
+            var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
+            if (!response.IsSuccessStatusCode)
+                return;
+
+            data = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(data);
+        }
+    }
+}   

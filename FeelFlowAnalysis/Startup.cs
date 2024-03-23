@@ -14,16 +14,20 @@ public class Startup
     {
         var config = builder.Configuration;
         builder.Services
+            // API settings
+            .Configure<ApiSettings>(config.GetSection(nameof(ApiSettings)))
+            .AddSingleton<IApiSettings>(sp =>
+                sp.GetRequiredService<IOptions<ApiSettings>>().Value)
             // Encryption service
             .Configure<EncryptionSettings>(config.GetSection(nameof(EncryptionSettings)))
             .AddSingleton<IEncryptionSettings>(sp => 
                 sp.GetRequiredService<IOptions<EncryptionSettings>>().Value)
-            .AddScoped<IEncryption, Encryption>()
+            .AddScoped<IEncryptionService, EncryptionService>()
             // Hashing service
             .Configure<HashingSettings>(config.GetSection(nameof(HashingSettings)))
             .AddSingleton<IHashingSettings>(sp => 
                 sp.GetRequiredService<IOptions<HashingSettings>>().Value)
-            .AddScoped<IHashing, Hashing>()
+            .AddScoped<IHashingService, HashingService>()
             // DB settings
             .Configure<DbSettings>(config.GetSection(nameof(DbSettings)))
             .AddSingleton<IDbSettings>(sp => 
