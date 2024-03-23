@@ -1,7 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @inject NavigationManager navigationManager
 @using FeelFlowAnalysis.Models.ViewModels
-@inject AuthenticationStateProvider GetAuthenticationStateAsync
+
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="page">
   <div class="sidebar">
@@ -14,6 +16,7 @@
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
         <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
+        @userEmail      
       }
       else
       {
@@ -42,5 +45,14 @@
     {
       await HttpContext!.SignOutAsync();
       navigationManager.NavigateTo("/logout", true);
+    }
+    private string? userEmail;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated ?? false)
+          userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value ?? "";
     }
 }
