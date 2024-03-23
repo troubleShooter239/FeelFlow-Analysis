@@ -41,11 +41,8 @@
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
-    private async Task LogOut()
-    {
+    private async Task LogOut() =>
       await HttpContext!.SignOutAsync();
-      navigationManager.NavigateTo("/logout", true);
-    }
     private string? userEmail;
     protected override async Task OnInitializedAsync()
     {

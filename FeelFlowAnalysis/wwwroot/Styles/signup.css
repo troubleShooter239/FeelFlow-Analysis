@@ -1,16 +1,16 @@
-body{
+body {
     background-color: #1e1e1e;
 }
 
-.brand-container{
+.brand-container {
     display: inline-flex;
 }
 
-.brand-name{
+.brand-name {
     color: #e6aa30;
 }
 
-.form-container{
+.form-container {
     background-color: #1e1e1e;
     padding: 25%;
 }

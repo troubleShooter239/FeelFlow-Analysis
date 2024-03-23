@@ -16,10 +16,10 @@
         {
             <p>@data</p>
         }
-        <label class="button upload-button">
+        <button class="button upload-button" style="position: relative;">
             Upload
-            <InputFile OnChange="LoadFile" accept="image/*" />
-        </label>
+            <InputFile OnChange="LoadFile" accept="image/*" class="input-file" />
+        </button>
     </div>
 </div>
 
@@ -56,12 +56,18 @@
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
         using (var client = new HttpClient())
         {
-            var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
-            if (!response.IsSuccessStatusCode)
-                return;
+            try
+            {
+                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
+                if (!response.IsSuccessStatusCode)
+                    return;
 
-            data = await response.Content.ReadAsStringAsync();
-            Console.WriteLine(data);
+                data = await response.Content.ReadAsStringAsync();
+            }
+            catch
+            {
+                return;
+            }
         }
     }
 }   

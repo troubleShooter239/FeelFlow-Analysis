@@ -60,3 +60,43 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+.button {
+    background-color: #2f2f2f;
+    border: none;
+    color: white;
+    padding: 16px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    transition-duration: 0.2s;
+    cursor: pointer;
+}
+
+.upload-button {
+    border-radius: 60px;
+    width: 251px;
+    font-weight: 400;
+    font-size: 24px;
+    background-color: #2f2f2f;
+    color: white;
+    border: 2px solid #e6aa30;
+}
+
+.upload-button:hover {
+    background-color: #404040;
+    border: 3px solid #e6aa30;
+    color: white;
+}
+
+.input-file {
+    opacity: 0;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 60px;
+}

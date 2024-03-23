@@ -1,15 +1,28 @@
 @page "/metadata"
 @layout Layout.MainLayout
+@using Models.ViewModels
 @rendermode InteractiveServer
 
 <PageTitle>Metadata</PageTitle>
 
-<h1>Get metadata</h1>
+@if (imageBytes is not null)
+{
+    // Add img and css
+}
+@if (data is not null)
+{
+    <p>@data</p>
+}
+<button class="button upload-button">
+    Upload
+    <InputFile OnChange="LoadFile" accept="image/*" style="display: none;" />
+</button>
 
-@* @code {
+@code {
     private byte[]? imageBytes;
     private string? imageSource;
-    private async Task OnInputFileChange(InputFileChangeEventArgs e)
+    private string? data;
+    private async Task LoadFile(InputFileChangeEventArgs e)
     {
         var file = e.File;
 
@@ -30,13 +43,26 @@
             imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
         }
 
-        var jsonContent = JsonSerializer.Serialize(new Models.API.Metadata.MetadataModel { B64img = imageSource } );
+        var values = new Dictionary<string, bool>
+        {
+            {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
+        };
+        var jsonContent = JsonSerializer.Serialize(new MetadataViewModel { B64img = imageSource } );
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
         using (var client = new HttpClient())
         {
-            var response = await client.PostAsync("http://127.0.0.1:8000/analyze", content);
-        }
+            try
+            {
+                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Metadata, content);
+                if (!response.IsSuccessStatusCode)
+                    return;
 
+                data = await response.Content.ReadAsStringAsync();
+            }
+            catch
+            {
+                return;
+            }
+        }
     }
-} *@
+}
