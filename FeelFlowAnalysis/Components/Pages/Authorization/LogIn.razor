@@ -37,12 +37,12 @@
         <DataAnnotationsValidator />
         <div>
             <label class="form-label">Email</label>
-            <InputText @bind-Value="_Model.Email" placeholder="Email" />
+            <InputText @bind-Value="_Model.Email" placeholder="Email" class="form-input" type="email"/>
             <ValidationMessage For="() => _Model.Email" />
         </div>
         <div>
             <label class="form-label">Password</label>
-            <InputText @bind-Value="_Model.Password" placeholder="Password" />
+            <InputText @bind-Value="_Model.Password" placeholder="Password" type="password" class="form-input" />
             <ValidationMessage For="() => _Model.Password" />
         </div>
         <div>
