@@ -14,6 +14,10 @@ public class Startup
     {
         var config = builder.Configuration;
         builder.Services
+            // API settings
+            .Configure<ApiSettings>(config.GetSection(nameof(ApiSettings)))
+            .AddSingleton<IApiSettings>(sp =>
+                sp.GetRequiredService<IOptions<ApiSettings>>().Value)
             // Encryption service
             .Configure<EncryptionSettings>(config.GetSection(nameof(EncryptionSettings)))
             .AddSingleton<IEncryptionSettings>(sp => 

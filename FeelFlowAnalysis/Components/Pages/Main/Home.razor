@@ -8,6 +8,14 @@
 <div class="home-container">
     <p class="text-handler">Upload your photo or video...</p>
     <div class="upload-button-container">
+        @if (imageBytes is not null)
+        {
+            // Add img and css
+        }
+        @if (data is not null)
+        {
+            <p>@data</p>
+        }
         <label class="button upload-button">
             Upload
             <InputFile OnChange="LoadFile" accept="image/*" />
@@ -18,6 +26,7 @@
 @code {
     private byte[]? imageBytes;
     private string? imageSource;
+    private string? data;
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
         var file = e.File;
@@ -45,13 +54,14 @@
         };
         var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel { B64img = imageSource, Actions = values } );
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-
         using (var client = new HttpClient())
         {
-            var response = await client.PostAsync("http://127.0.0.1:8000/analyze", content);
-            Console.WriteLine(response);
-        }
+            var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
+            if (!response.IsSuccessStatusCode)
+                return;
 
-        
+            data = await response.Content.ReadAsStringAsync();
+            Console.WriteLine(data);
+        }
     }
 }   
