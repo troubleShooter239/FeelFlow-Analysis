@@ -2,6 +2,7 @@
 @layout Layout.MainLayout
 @using Models.ViewModels
 @rendermode InteractiveServer
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Home</PageTitle>
 <div class="home-container">
@@ -51,5 +52,6 @@
             Console.WriteLine(response);
         }
 
+        
     }
 }   

@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
 @using FeelFlowAnalysis.Models.ViewModels
+@using System.Security.Claims
+@inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="page">
   <div class="sidebar">
@@ -11,7 +13,7 @@
       <a class="navbar-brand" href="">FeelFlow Analysis</a>
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
-        // Add User and logout btn here...
+        @userEmail
       }
       else
       {
@@ -35,4 +37,14 @@
 @code {
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
+
+    private string? userEmail;
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.Identity?.IsAuthenticated ?? false)
+          userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value ?? "";
+    }
 }
