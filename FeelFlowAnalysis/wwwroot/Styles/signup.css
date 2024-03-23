@@ -1,0 +1,53 @@
+body{
+    background-color: #1e1e1e;
+}
+
+.brand-container{
+    display: inline-flex;
+}
+
+.brand-name{
+    color: #e6aa30;
+}
+
+.form-container{
+    background-color: #1e1e1e;
+    padding: 25%;
+}
+
+.card-container {
+    background-color: #2f2f2f;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.form-label {
+    color: #e6aa30;
+}
+
+.form-input {
+    border: 1px solid #e6aa30;
+    background-color: #1e1e1e;
+    color: white;
+    border-radius: 5px;
+    padding: 8px;
+    margin-bottom: 15px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.submit-button {
+    transition-duration: 0.2s;
+    color: #fff;
+    background-color: #e6aa30;
+    border-color: #e6aa30;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.submit-button:hover {
+    background-color: #1e1e1e;
+}

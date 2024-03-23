@@ -1,5 +1,7 @@
 ﻿@inherits LayoutComponentBase
+@inject NavigationManager navigationManager
 @using FeelFlowAnalysis.Models.ViewModels
+
 @using System.Security.Claims
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -13,13 +15,14 @@
       <a class="navbar-brand" href="">FeelFlow Analysis</a>
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
-        @userEmail
+        <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
+        @userEmail      
       }
       else
       {
         <div class="button-pos">
-          <button class="btn btn-primary" id="loginBtn">LogIn</button>
-          <button class="btn btn-primary" id="signupBtn">SignUp</button>
+          <NavLink href="Login"><span class="btn btn-primary">LogIn</span></NavLink>
+          <NavLink href="Signup"><span class="btn btn-primary">SignUp</span></NavLink>
         </div>
       }
     </div>
@@ -38,6 +41,11 @@
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
+    private async Task LogOut()
+    {
+      await HttpContext!.SignOutAsync();
+      navigationManager.NavigateTo("/logout", true);
+    }
     private string? userEmail;
     protected override async Task OnInitializedAsync()
     {
