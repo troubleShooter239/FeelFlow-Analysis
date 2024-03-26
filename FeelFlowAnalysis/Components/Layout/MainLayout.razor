@@ -12,7 +12,7 @@
 
   <main>
     <div class="top-row">
-      <a class="navbar-brand" href="">FeelFlow Analysis</a>
+      <a href="" class="navbar-brand">FeelFlow Analysis</a>
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
         <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
@@ -21,8 +21,8 @@
       else
       {
         <div class="button-pos">
-          <NavLink href="Login"><span class="btn btn-primary">LogIn</span></NavLink>
-          <NavLink href="Signup"><span class="btn btn-primary">SignUp</span></NavLink>
+          <NavLink href="login"><button class="btn btn-primary">LogIn</button></NavLink>
+          <NavLink href="signup"><button class="btn btn-primary">SignUp</button></NavLink>
         </div>
       }
     </div>

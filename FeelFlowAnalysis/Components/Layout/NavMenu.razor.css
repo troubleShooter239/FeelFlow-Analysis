@@ -89,10 +89,6 @@
     display: block;
 }
 
-.nav-menu-title {
-    margin-left: 3px;
-}
-
 @media (min-width: 641px) {
     .navbar-toggler {
         display: none;
