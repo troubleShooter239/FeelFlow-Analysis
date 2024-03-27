@@ -12,17 +12,17 @@
 
   <main>
     <div class="top-row">
-      <a class="navbar-brand" href="">FeelFlow Analysis</a>
+      <p>FeelFlow Analysis uses FeelFlow API.</p>
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
+        <p style="color: #e6aa30;font-size: 1rem;">@userEmail</p>    
         <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
-        @userEmail      
       }
       else
       {
         <div class="button-pos">
-          <NavLink href="Login"><span class="btn btn-primary">LogIn</span></NavLink>
-          <NavLink href="Signup"><span class="btn btn-primary">SignUp</span></NavLink>
+          <NavLink href="login"><button class="btn btn-primary">LogIn</button></NavLink>
+          <NavLink href="signup"><button class="btn btn-primary">SignUp</button></NavLink>
         </div>
       }
     </div>
@@ -41,11 +41,8 @@
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
-    private async Task LogOut()
-    {
+    private async Task LogOut() =>
       await HttpContext!.SignOutAsync();
-      navigationManager.NavigateTo("/logout", true);
-    }
     private string? userEmail;
     protected override async Task OnInitializedAsync()
     {

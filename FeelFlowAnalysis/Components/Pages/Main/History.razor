@@ -5,8 +5,21 @@
 <PageTitle>History</PageTitle>
 
 <h1>History</h1>
-@*TODO: Add History and css*@
-@* @foreach(var item in User.History)
+@if (HttpContext!.User.Identity!.IsAuthenticated)
 {
-    <p>item</p>
-} *@
+    @*TODO: Add History and css*@
+    @* @foreach(var item in User.History)
+    {
+        <p>item</p>
+    } *@
+}
+else
+{
+    <p>You must sign in!</p>
+}
+
+
+@code {
+    [CascadingParameter]
+    private HttpContext? HttpContext { get; set; }
+}

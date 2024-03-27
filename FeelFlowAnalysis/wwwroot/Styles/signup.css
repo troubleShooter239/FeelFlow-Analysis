@@ -1,24 +1,39 @@
-body{
+body {
     background-color: #1e1e1e;
 }
 
-.brand-container{
-    display: inline-flex;
+.brand-container {
+    display: flex;
+    
+    align-items: flex-end;
+
 }
 
-.brand-name{
+.brand-name {
     color: #e6aa30;
+    margin-left: 20px;
 }
 
-.form-container{
+.signup-container {
     background-color: #1e1e1e;
-    padding: 25%;
+    height: 100vh;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* margin: auto; */
+}
+
+.form-container {
+    
+
 }
 
 .card-container {
     background-color: #2f2f2f;
     border-radius: 10px;
     padding: 20px;
+    margin-top: 20px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
