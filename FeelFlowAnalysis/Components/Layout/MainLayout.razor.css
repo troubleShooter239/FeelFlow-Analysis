@@ -122,7 +122,7 @@ main {
         5px 0px 20px 0px rgba(0, 0, 0, 0.19);
     height: 6.65rem;
     display: flex;
-    justify-content: flex-end;
+    justify-content: space-between;
     align-items: center;
     margin-left: 0.7px;
 }
@@ -178,6 +178,12 @@ main {
         text-align: right;
         width: 0;
     }
+}
+
+.top-row-text {
+    color: #e6aa30;
+    font-size: 1rem;
+    margin-bottom: 0;
 }
 
 #blazor-error-ui {
