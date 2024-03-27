@@ -1,7 +1,3 @@
-body {
-    background-color: #1e1e1e;
-}
-
 .brand-container {
     display: flex;
     
@@ -22,11 +18,6 @@ body {
     justify-content: center;
     align-items: center;
     /* margin: auto; */
-}
-
-.form-container {
-    
-
 }
 
 .card-container {

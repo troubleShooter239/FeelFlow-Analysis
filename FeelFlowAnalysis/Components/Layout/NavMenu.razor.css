@@ -139,3 +139,37 @@
 		overflow-y: auto;
 	}
 }
+
+.premium-button {
+    padding: 17px 40px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: 0;
+    background-color: white;
+    box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    transition: all 0.5s ease;
+}
+
+.premium-button:hover {
+    letter-spacing: 3px;
+    background-color: hsl(40, 78%, 55%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(230, 170, 48) 0px 7px 29px 0px;
+}
+
+.premium-button:active {
+    letter-spacing: 3px;
+    background-color: hsl(40, 78%, 55%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(230, 170, 48) 0px 0px 0px 0px;
+    transform: translateY(10px);
+    transition: 100ms;
+}
+
+.premium-button-container {
+    padding-top: 55%;
+    padding-left: 7%;
+}
