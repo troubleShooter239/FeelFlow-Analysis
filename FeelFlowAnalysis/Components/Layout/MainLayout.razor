@@ -12,19 +12,24 @@
 
   <main>
     <div class="top-row">
-      <p>FeelFlow Analysis uses FeelFlow API.</p>
-      @if (HttpContext!.User.Identity!.IsAuthenticated)
-      {
-        <p style="color: #e6aa30;font-size: 1rem;">@userEmail</p>    
-        <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
-      }
-      else
-      {
-        <div class="button-pos">
-          <NavLink href="login"><button class="btn btn-primary">LogIn</button></NavLink>
-          <NavLink href="signup"><button class="btn btn-primary">SignUp</button></NavLink>
-        </div>
-      }
+      <div style="margin-left: 1rem;">
+        <pre class="top-row-text">FeelFlow Analysis uses FeelFlow API. To see the licence, check this <a style="margin: 0;" href="https://github.com/troubleShooter239/FeelFlow-analysis">link</a>.
+Might be mistakes. Verify the responses of AI.</pre>
+      </div>
+      <div>
+        @if (HttpContext!.User.Identity!.IsAuthenticated)
+        {
+          <p class="top-row-text">@userEmail</p>    
+          <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
+        }
+        else
+        {
+          <div class="button-pos">
+            <NavLink href="login"><button class="btn btn-primary">LogIn</button></NavLink>
+            <NavLink href="signup"><button class="btn btn-primary">SignUp</button></NavLink>
+          </div>
+        }
+      </div>
     </div>
 
     <article class="content px-4">@Body</article>
