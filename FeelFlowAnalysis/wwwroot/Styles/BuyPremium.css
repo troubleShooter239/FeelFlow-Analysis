@@ -16,24 +16,111 @@
   transition: box-shadow 0.3s, transform 0.3s;
 }
 
+.card-standart {
+    height: 70%;
+    background-color: #2f2f2f;
+    color: #e6aa30;
+    border-radius: 20px;
+    padding: 20px;
+    margin: 10px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+  transition: box-shadow 0.3s, transform 0.3s;
+}
+
 .card-premium:hover {
   box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
   transform: scale(1.05);
 }
 
-.card-premium h2 {
+.card-standart:hover {
+    box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
+    transform: scale(1.05);
+  }
+
+.card-text h2 {
     margin-top: 0;
 }
 
-.card-premium ul {
-    list-style-type: none;
-    padding: 0;
+.first-marker ul li::marker{
+    background-color: white;
+    font-size: 36px;
 }
 
-.card-premium ul li {
-    color: #ffffff;
+.card-text ul li::marker{
+    color: #e6aa30;
+    font-size: 36px;
 }
 
-.card-premium ul li.gray {
-    color: #808080;
+.standart-button {
+    padding: 17px 40px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: 0;
+    background-color: gray;
+    box-shadow: rgba(87, 86, 86, 0.05) 0 0 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    transition: all 0.5s ease;
+}
+
+.standart-button:hover {
+    letter-spacing: 3px;
+    background-color: hsl(40, 32%, 36%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(230, 170, 48) 0px 7px 29px 0px;
+}
+
+.premium-button {
+    padding: 17px 40px;
+    border-radius: 50px;
+    cursor: pointer;
+    border: 0;
+    background-color: white;
+    box-shadow: rgb(0 0 0 / 5%) 0 0 8px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    font-size: 15px;
+    transition: all 0.5s ease;
+}
+
+.premium-button:hover {
+    letter-spacing: 3px;
+    background-color: hsl(40, 78%, 55%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(230, 170, 48) 0px 7px 29px 0px;
+}
+
+.premium-button:active {
+    letter-spacing: 3px;
+    background-color: hsl(40, 78%, 55%);
+    color: hsl(0, 0%, 100%);
+    box-shadow: rgb(230, 170, 48) 0px 0px 0px 0px;
+    transform: translateY(10px);
+    transition: 100ms;
+}
+
+.premium-button-container {
+    display: flex;
+    justify-content: center;
+    position: relative;
+    padding-top: 10px;
+}
+
+.price{
+    padding-top: 50px;
+    display: flex;
+    justify-content: center;
+    color: #e6aa30;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.price-standart{
+    padding-top: 220px;
+    display: flex;
+    justify-content: center;
+    color: #e6aa30;
+    font-size: 24px;
+    font-weight: bold;
 }
