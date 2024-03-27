@@ -12,10 +12,11 @@
 
   <main>
     <div class="top-row">
+      <p>FeelFlow Analysis uses FeelFlow API.</p>
       @if (HttpContext!.User.Identity!.IsAuthenticated)
       {
+        <p style="color: #e6aa30;font-size: 1rem;">@userEmail</p>    
         <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
-        @userEmail      
       }
       else
       {
