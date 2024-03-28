@@ -1,6 +1,7 @@
 ﻿@page "/"
 @layout Layout.MainLayout
 @using Models.ViewModels
+@using Models.DTO.Analyze
 @rendermode InteractiveServer
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
@@ -12,7 +13,13 @@
     }
     @if (data is not null)
     {
-        <p>@data</p>
+        foreach(var face in data)
+        {
+            foreach(var info in face)
+            {
+                <p>@info.Key.ToString()</p>
+            }
+        }
     }
     @if(!loading)
     {
@@ -46,10 +53,10 @@
 @code {
     private byte[]? imageBytes;
     private bool loading = false;
-    private string? imageSource;
-    private string? data;
+    private List<AnalyzeDTO>? data;
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
+        data = null;
         loading = true;
         var file = e.File;
 
@@ -69,27 +76,39 @@
         {
             await file.OpenReadStream().CopyToAsync(memoryStream);
             imageBytes = memoryStream.ToArray();
-            imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
         }
 
         var values = new Dictionary<string, bool>
         {
             {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
         };
-        var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel { B64img = imageSource, Actions = values } );
-        var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
+        var jsonContent = JsonSerializer.Serialize(
+            new AnalyzeViewModel 
+            { 
+                B64img = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}", 
+                Actions = values 
+            } 
+        );
+        var content = new StringContent(
+            jsonContent, Encoding.UTF8, "application/json"
+        );
         using (var client = new HttpClient())
         {
             try
             {
-                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
+                var response = await client.PostAsync(
+                    apiSettings.ApiUrl + apiSettings.Analyze, content
+                );
                 if (!response.IsSuccessStatusCode)
                 {
                     loading = false;
                     return; 
                 }
                     
-                data = await response.Content.ReadAsStringAsync();
+                var serializedData = await response.Content.ReadAsStringAsync();
+                data = await JsonSerializer.DeserializeAsync<List<AnalyzeDTO>>(
+                    new System.IO.MemoryStream(Encoding.UTF8.GetBytes(serializedData!))
+                );
                 loading = false;
             }
             catch
