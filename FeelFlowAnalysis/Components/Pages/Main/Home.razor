@@ -5,15 +5,26 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <PageTitle>Home</PageTitle>
+
+@if (!string.IsNullOrEmpty(imageDataUrl))
+{   
+    <div class="image-data-container">
+        <img src="@imageDataUrl" alt="Image" class="user-card"/>
+        <div class="data-container">
+            <span class="user-info-card">race</span>
+            <span class="user-info-card">age</span>
+            <span class="user-info-card">gender</span>
+            <span class="user-info-card">mood</span>
+            <span class="user-info-card">geo</span>
+            <span class="user-info-card">some</span>
+            <span class="user-info-card">else</span>
+            <span class="user-info-card">words</span>
+            <span class="user-info-card">written</span>
+        </div>
+    </div>
+}
+
 <div class="home-container">
-    @if (imageBytes is not null)
-    {
-        // Add img and css
-    }
-    @if (data is not null)
-    {
-        <p>@data</p>
-    }
     @if(!loading)
     {
         <p class="text-handler">Upload your photo or video...</p>
@@ -48,6 +59,8 @@
     private bool loading = false;
     private string? imageSource;
     private string? data;
+    private string imageDataUrl = string.Empty;
+
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
         loading = true;
@@ -64,6 +77,13 @@
             loading = false;
             return;
         }
+
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffer);
+
+        string mimeType = file.ContentType;
+        imageDataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(buffer)}";
+        StateHasChanged();
 
         using (var memoryStream = new MemoryStream())
         {
