@@ -104,15 +104,18 @@
                     loading = false;
                     return; 
                 }
-                    
+                
                 var serializedData = await response.Content.ReadAsStringAsync();
+                Console.WriteLine(serializedData);
                 data = await JsonSerializer.DeserializeAsync<List<AnalyzeDTO>>(
                     new System.IO.MemoryStream(Encoding.UTF8.GetBytes(serializedData!))
                 );
                 loading = false;
             }
-            catch
+            catch(Exception exception)
             {
+                Console.WriteLine(exception.Message);
+                Console.WriteLine(exception.StackTrace);
                 loading = false;
                 return;
             }
