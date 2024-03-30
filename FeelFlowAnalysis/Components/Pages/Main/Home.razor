@@ -10,55 +10,47 @@
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @inject ILogger<Home> logger
 @inject HttpClient httpClient
-@inject IOptions<Settings> Settings
+@inject Microsoft.Extensions.Options.IOptions<Settings> Settings
 
 <PageTitle>Home</PageTitle>
 
-@if (!string.IsNullOrEmpty(imageDataUrl))
+@if (!string.IsNullOrEmpty(_imageSource) && _data is not null)
 {   
     <div class="image-data-container">
-        <img src="@imageDataUrl" alt="Image" class="user-card"/>
+        <div class="user-card-container">
+            <img src="@_imageSource" alt="Image" class="user-card"/>
+        </div>
         <div class="data-container">
-            <span class="user-info-card">race</span>
-            <span class="user-info-card">age</span>
-            <span class="user-info-card">gender</span>
-            <span class="user-info-card">mood</span>
-            <span class="user-info-card">geo</span>
-            <span class="user-info-card">some</span>
-            <span class="user-info-card">else</span>
-            <span class="user-info-card">words</span>
-            <span class="user-info-card">written</span>
+            @for (int i = 0; i < _data.Length; i++)
+            {
+                <span class="user-info-card">@(i + 1) face:</span>
+                foreach (var property in typeof(AnalyzeDTO).GetProperties())
+                {
+                    <span class="user-info-card">@property.Name: @property.GetValue(_data[i])</span>
+                }
+            }
         </div>
     </div>
 }
 
 <div class="home-container">
-    @if (_imageBytes is not null)
-    {
-        // Add img and css
-    }
     @if (_errorMessage is not null)
     {
         <p>@_errorMessage</p>
     }
-    @if (_data is not null)
-    {
-        for (int i = 0; i < _data.Length; i++)
-        {
-            <h4>@(i + 1) face:</h4>
-            foreach (var property in typeof(AnalyzeDTO).GetProperties())
-            {
-                <p>@property.Name: @property.GetValue(_data[i])</p>
-            }
-        }
-    }
     @if(!_loading)
     {
-        <p class="text-handler">Upload your photo or video...</p>
+        <p class="text-handler">Upload your photo...</p>
+        <div class="upload-button-container">
+            <button class="button upload-button" style="position: relative;">
+                Upload
+                <InputFile OnChange="LoadFile" accept="image/*" class="input-file" />
+            </button>
+        </div>
     }   
-    <div class="upload-button-container">
-        @if(_loading)
-        {
+    else
+    {
+        <div class="upload-button-container">
             <div class="spinner-wrapper">
                 <div class="spinner">
                     <div class="sk-folding-cube">
@@ -69,28 +61,21 @@
                     </div>
                 </div>
             </div>
-        }
-        else
-        {
-            <button class="button upload-button" style="position: relative;">
-                Upload
-                <InputFile OnChange="LoadFile" accept="image/*" class="input-file" />
-            </button>
-        }
-    </div>
+        </div>
+    }
 </div>
 
 @code {
     private Dictionary<string, bool> _actions = new()
     { {"age", true}, {"emotion", true}, {"gender", true}, {"race", true} };
-    private byte[]? _imageBytes;
     private bool _loading = false;
     private AnalyzeDTO[]? _data;
     private string? _errorMessage;
+    private string? _imageSource;
   
     private void ClearData()
     {
-        _data = null;
+        _imageSource = null;
         _loading = true;
         _errorMessage = null;
     }
@@ -113,19 +98,15 @@
             _errorMessage = "File size > 5MB.";
         }
 
-        var buffer = new byte[file.Size];
-        await file.OpenReadStream().ReadAsync(buffer);
-
-        string mimeType = file.ContentType;
-        imageDataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(buffer)}";
-        StateHasChanged();
-
+        byte[]? _imageBytes;
         try
         {
             using var memoryStream = new MemoryStream();
             await file.OpenReadStream(maxAllowedSize: Settings.Value.Api.MaxFileSize)
                 .CopyToAsync(memoryStream);
             _imageBytes = memoryStream.ToArray();
+            _imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}";
+            StateHasChanged();
         }
         catch (Exception ex)
         {
@@ -136,15 +117,14 @@
 
         var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel 
         { 
-            B64img = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}", 
+            B64img = _imageSource, 
             Actions = _actions
         });
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
         try
         {
-            var response = await httpClient
-                .PostAsync(Settings.Value.Api.Analyze, content);
+            var response = await httpClient.PostAsync(Settings.Value.Api.Analyze, content);
             response.EnsureSuccessStatusCode();
             
             var serialized_data = await response.Content.ReadAsStringAsync();

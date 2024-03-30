@@ -3,15 +3,19 @@
 @rendermode InteractiveServer
 
 @using FeelFlowAnalysis.Models.ViewModels
+@using Models.DTO.Verify
 
-@inject IOptions<Settings> Settings
+@inject HttpClient httpClient
+@inject ILogger<Verify> logger
+@inject Microsoft.Extensions.Options.IOptions<Settings> Settings
 
 <PageTitle>Verify</PageTitle>
 
-@if (!string.IsNullOrEmpty(imageDataUrl) && data is not null)
+@if (!string.IsNullOrEmpty(_imageSource1) && !string.IsNullOrEmpty(_imageSource2) && _data is not null)
 {
     <div class="image-data-container">
-        <img src="@imageDataUrl" alt="Image" class="user-card"/>
+        <img src="@_imageSource1" alt="Image" class="user-card"/>
+        <img src="@_imageSource2" alt="Image" class="user-card"/>
         <div class="data-container">
             <span class="user-info-card">race</span>
             <span class="user-info-card">age</span>
@@ -27,17 +31,12 @@
 }
 
 <div class="home-container">
-    
     @if(!_loading)
     {
         <p class="text-handler">Upload your photo's</p>
     }
     <div class="upload-button-container">
-        @if (_imageBytes1 is not null && _imageBytes2 is not null)
-        {
-        
-        }
-        @if(loading)
+        @if(_loading)
         {
             <div class="spinner-wrapper">
                 <div class="spinner">
@@ -50,14 +49,6 @@
                 </div>
             </div>
         }
-        @* @if (data is not null)
-        {
-            <p>@data</p>
-        } *@
-        <button class="button upload-button" style="position: relative;">
-            Upload
-            <InputFile OnChange="LoadFile" accept="image/*" class="input-file" multiple />
-        </button>
         else
         {
             <button class="button upload-button" style="position: relative;">
@@ -69,18 +60,16 @@
 </div>
 
 @code {
-    private byte[]? _imageBytes1;
-    private byte[]? _imageBytes2;
-    private List<string>? _imagesSource;
-    private string? data;
-    private string rModelName = string.Empty;
-    private string distanceMetric = string.Empty;
+    private string? _imageSource1;
+    private string? _imageSource2;
+    private VerifyDTO? _data;
+    private string _rModelName = string.Empty;
+    private string _distanceMetric = string.Empty;
     private bool _loading = false;
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
-        _imageBytes1 = null;
-        _imageBytes2 = null;
-        _imagesSource = null;
+        _imageSource1 = null;
+        _imageSource2 = null;
         _loading = true;
 
         var files = e.GetMultipleFiles(2);
@@ -91,58 +80,50 @@
             return;
         }
 
+        byte[]? _imageBytes1;
         using (var memoryStream1 = new MemoryStream())
         {
             await files[0].OpenReadStream().CopyToAsync(memoryStream1);
             _imageBytes1 = memoryStream1.ToArray();
+            _imageSource1 = $"data:{files[0].ContentType};base64,{Convert.ToBase64String(_imageBytes1)}";
         }
 
+        byte[]? _imageBytes2;
         using (var memoryStream2 = new MemoryStream())
         {
             await files[1].OpenReadStream().CopyToAsync(memoryStream2);
             _imageBytes2 = memoryStream2.ToArray();
-        }
-        if (!file.ContentType.StartsWith("image"))
-        {
-            loading = false;
-            return;
+            _imageSource2 = $"data:{files[1].ContentType};base64,{Convert.ToBase64String(_imageBytes2)}";
         }
 
-        var buffer = new byte[file.Size];
-        await file.OpenReadStream().ReadAsync(buffer);
-
-        string mimeType = file.ContentType;
-        imageDataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(buffer)}";
         StateHasChanged();
-
-        using (var memoryStream = new MemoryStream())
  
         var jsonContent = JsonSerializer.Serialize(new VerifyViewModel 
         { 
-            B64img1 = $"data:{files[0].ContentType};base64,{Convert.ToBase64String(_imageBytes1)}", 
-            B64img2 = $"data:{files[1].ContentType};base64,{Convert.ToBase64String(_imageBytes2)}",
-            RModelName = rModelName,
-            DistanceMetric = distanceMetric
+            B64img1 = _imageSource1, 
+            B64img2 = _imageSource2,
+            RModelName = _rModelName,
+            DistanceMetric = _distanceMetric
         });
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-        using (var client = new HttpClient())
+        try
         {
-            try
-            {
-                var response = await client.PostAsync(Settings.Value.Api.Verify, content);
-                if (!response.IsSuccessStatusCode)
-                {
-                    loading = false;
-                    return;
-                }
+            var response = await httpClient.PostAsync(Settings.Value.Api.Verify, content);
+            response.EnsureSuccessStatusCode();
 
-                data = await response.Content.ReadAsStringAsync();
-            }
-            catch
-            {
-                loading = false;
-                return;
-            }
+            var serialized_data = await response.Content.ReadAsStringAsync();
+
+            logger.LogInformation("API response:\n" + serialized_data);
+
+            _data = JsonSerializer.Deserialize<VerifyDTO>(serialized_data);
+        }
+        catch(Exception ex)
+        {
+            logger.LogError(ex.Message);
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 }   
