@@ -13,4 +13,5 @@
 @using Microsoft.AspNetCore.Authentication
 @using Microsoft.AspNetCore.Components.Authorization
 @using FeelFlowAnalysis.Models.Settings
-@inject IApiSettings apiSettings
+@using Microsoft.Extensions.Options
+@inject IOptions<Settings> Settings

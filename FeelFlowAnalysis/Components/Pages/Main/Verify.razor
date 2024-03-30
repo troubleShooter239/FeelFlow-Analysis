@@ -59,7 +59,7 @@
         {
             try
             {
-                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
+                var response = await client.PostAsync(Settings.Value.Api.Verify, content);
                 if (!response.IsSuccessStatusCode)
                     return;
 

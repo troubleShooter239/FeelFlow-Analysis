@@ -1,18 +1,17 @@
 ﻿using MongoDB.Driver;
 using FeelFlowAnalysis.Models.Entities;
-using FeelFlowAnalysis.Models.Settings;
 using FeelFlowAnalysis.Services.Interfaces;
-
+using Microsoft.Extensions.Options;
 
 namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Service for managing user data.
-public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUserService
+public class UserService(IOptions<Settings> settings, IMongoClient mongoClient) : IUserService
 {   
     private readonly IMongoCollection<User> _users = mongoClient
-        .GetDatabase(settings.DatabaseName)
-        .GetCollection<User>(settings.UsersCollectionName);
+            .GetDatabase(settings.Value.Database.Name)
+            .GetCollection<User>(settings.Value.Database.UsersCollectionName);
 
     // Summary:
     //     Authenticates a user based on email and password hash.
