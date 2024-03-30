@@ -13,7 +13,9 @@
     padding: 20px;
     margin: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-  transition: box-shadow 0.3s, transform 0.3s;
+    transition:
+        box-shadow 0.3s,
+        transform 0.3s;
 }
 
 .card-standart {
@@ -24,29 +26,31 @@
     padding: 20px;
     margin: 10px;
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
-  transition: box-shadow 0.3s, transform 0.3s;
+    transition:
+        box-shadow 0.3s,
+        transform 0.3s;
 }
 
 .card-premium:hover {
-  box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
-  transform: scale(1.05);
+    box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
+    transform: scale(1.05);
 }
 
 .card-standart:hover {
     box-shadow: 0px 0px 20px rgba(255, 255, 255, 0.7);
     transform: scale(1.05);
-  }
+}
 
 .card-text h2 {
     margin-top: 0;
 }
 
-.first-marker ul li::marker{
+.first-marker ul li::marker {
     background-color: white;
     font-size: 36px;
 }
 
-.card-text ul li::marker{
+.card-text ul li::marker {
     color: #e6aa30;
     font-size: 36px;
 }
@@ -107,7 +111,7 @@
     padding-top: 10px;
 }
 
-.price{
+.price {
     padding-top: 50px;
     display: flex;
     justify-content: center;
@@ -116,7 +120,7 @@
     font-weight: bold;
 }
 
-.price-standart{
+.price-standart {
     padding-top: 220px;
     display: flex;
     justify-content: center;

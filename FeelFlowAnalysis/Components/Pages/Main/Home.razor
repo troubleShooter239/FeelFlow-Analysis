@@ -16,7 +16,7 @@
 
 @if (!string.IsNullOrEmpty(_imageSource) && _data is not null)
 {   
-    <div class="image-data-container">
+    <div>
         <div class="user-card-container">
             <img src="@_imageSource" alt="Image" class="user-card"/>
         </div>
@@ -78,6 +78,7 @@
         _imageSource = null;
         _loading = true;
         _errorMessage = null;
+        _data = null;
     }
   
     private async Task LoadFile(InputFileChangeEventArgs e)
@@ -96,16 +97,15 @@
         {
             _loading = false;
             _errorMessage = "File size > 5MB.";
+            return;
         }
 
-        byte[]? _imageBytes;
         try
         {
             using var memoryStream = new MemoryStream();
             await file.OpenReadStream(maxAllowedSize: Settings.Value.Api.MaxFileSize)
                 .CopyToAsync(memoryStream);
-            _imageBytes = memoryStream.ToArray();
-            _imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}";
+            _imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(memoryStream.ToArray())}";
             StateHasChanged();
         }
         catch (Exception ex)

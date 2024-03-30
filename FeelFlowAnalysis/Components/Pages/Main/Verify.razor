@@ -13,19 +13,16 @@
 
 @if (!string.IsNullOrEmpty(_imageSource1) && !string.IsNullOrEmpty(_imageSource2) && _data is not null)
 {
-    <div class="image-data-container">
-        <img src="@_imageSource1" alt="Image" class="user-card"/>
-        <img src="@_imageSource2" alt="Image" class="user-card"/>
+    <div>
+        <div class="user-card-container">
+            <img src="@_imageSource1" alt="Image" class="user-card"/>
+            <img src="@_imageSource2" alt="Image" class="user-card"/> 
+        </div>
         <div class="data-container">
-            <span class="user-info-card">race</span>
-            <span class="user-info-card">age</span>
-            <span class="user-info-card">gender</span>
-            <span class="user-info-card">mood</span>
-            <span class="user-info-card">geo</span>
-            <span class="user-info-card">some</span>
-            <span class="user-info-card">else</span>
-            <span class="user-info-card">words</span>
-            <span class="user-info-card">written</span>
+            @foreach (var property in typeof(VerifyDTO).GetProperties())
+            {
+                <span class="user-info-card">@property.Name: @property.GetValue(_data)</span>
+            }
         </div>
     </div>
 }
@@ -53,7 +50,7 @@
         {
             <button class="button upload-button" style="position: relative;">
                 Upload
-                <InputFile OnChange="LoadFile" accept="image/*" class="input-file" />
+                <InputFile OnChange="LoadFile" accept="image/*" class="input-file" multiple />
             </button>
         }
     </div>
@@ -66,38 +63,77 @@
     private string _rModelName = string.Empty;
     private string _distanceMetric = string.Empty;
     private bool _loading = false;
-    private async Task LoadFile(InputFileChangeEventArgs e)
+    private List<IBrowserFile> _loadedFiles = [];
+    private string? _errorMessage;
+    
+    private void ClearData()
     {
         _imageSource1 = null;
         _imageSource2 = null;
         _loading = true;
+        _loadedFiles.Clear();
+        _errorMessage = null;
+    }
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        ClearData();
 
-        var files = e.GetMultipleFiles(2);
-
-        if(files is null)
+        if (e.FileCount != 2)
         {
             _loading = false;
             return;
         }
 
-        byte[]? _imageBytes1;
-        using (var memoryStream1 = new MemoryStream())
+        foreach (IBrowserFile file in e.GetMultipleFiles(2))
         {
-            await files[0].OpenReadStream().CopyToAsync(memoryStream1);
-            _imageBytes1 = memoryStream1.ToArray();
-            _imageSource1 = $"data:{files[0].ContentType};base64,{Convert.ToBase64String(_imageBytes1)}";
+            try
+            {
+                if (file.Size > Settings.Value.Api.MaxFileSize)
+                {
+                    _errorMessage = "File size > 5MB.";
+                    throw new Exception("File size is too big.");
+                }
+                _loadedFiles.Add(file);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError($"File: {file.Name} Error: {ex.Message}");
+                _loading = false;
+                return;
+            }
         }
 
-        byte[]? _imageBytes2;
-        using (var memoryStream2 = new MemoryStream())
+        if( _loadedFiles[0] is null || _loadedFiles[1] is null)
         {
-            await files[1].OpenReadStream().CopyToAsync(memoryStream2);
-            _imageBytes2 = memoryStream2.ToArray();
-            _imageSource2 = $"data:{files[1].ContentType};base64,{Convert.ToBase64String(_imageBytes2)}";
+            _loading = false;
+            return;
         }
 
-        StateHasChanged();
- 
+        try
+        {
+            using (var memoryStream1 = new MemoryStream())
+            {
+                await _loadedFiles[0].OpenReadStream(maxAllowedSize: Settings.Value.Api.MaxFileSize)
+                    .CopyToAsync(memoryStream1);
+                _imageSource1 = $"data:{_loadedFiles[0].ContentType};base64,{Convert.ToBase64String(memoryStream1.ToArray())}";
+            }
+
+            using (var memoryStream2 = new MemoryStream())
+            {
+                await _loadedFiles[1].OpenReadStream(maxAllowedSize: Settings.Value.Api.MaxFileSize)
+                    .CopyToAsync(memoryStream2);
+                _imageSource2 = $"data:{_loadedFiles[1].ContentType};base64,{Convert.ToBase64String(memoryStream2.ToArray())}";
+            }
+
+            StateHasChanged();
+        }
+        catch(Exception ex)
+        {
+            logger.LogError(ex.Message);
+            logger.LogError(ex.StackTrace);
+            _loading = false;
+            return;
+        }
         var jsonContent = JsonSerializer.Serialize(new VerifyViewModel 
         { 
             B64img1 = _imageSource1, 

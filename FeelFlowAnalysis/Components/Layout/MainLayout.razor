@@ -1,15 +1,15 @@
 ﻿@inherits LayoutComponentBase
-@inject NavigationManager navigationManager
-@using FeelFlowAnalysis.Models.ViewModels
 
+@using FeelFlowAnalysis.Models.ViewModels
 @using System.Security.Claims
+
+@inject NavigationManager navigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 
 <div class="page">
   <div class="sidebar">
     <NavMenu />
   </div>
-
   <main>
     <div class="top-row">
       <div style="margin-left: 1rem;">
@@ -20,13 +20,13 @@ Might be mistakes. Verify the responses of AI.</pre>
         @if (HttpContext!.User.Identity!.IsAuthenticated)
         {
           <p class="top-row-text">@userEmail</p>    
-          <button class="btn btn-primary" @onclick="LogOut">LogOut</button>
+          <NavLink href="logout"><button class="btn btn-primary">Log out</button></NavLink>
         }
         else
         {
           <div class="button-pos">
-            <NavLink href="login"><button class="btn btn-primary">LogIn</button></NavLink>
-            <NavLink href="signup"><button class="btn btn-primary">SignUp</button></NavLink>
+            <NavLink href="login"><button class="btn btn-primary">Log in</button></NavLink>
+            <NavLink href="signup"><button class="btn btn-primary">Sign up</button></NavLink>
           </div>
         }
       </div>
@@ -46,15 +46,19 @@ Might be mistakes. Verify the responses of AI.</pre>
     [CascadingParameter]
     private HttpContext? HttpContext { get; set; }
 
-    private async Task LogOut() =>
+    private async Task LogOut()
+    {
       await HttpContext!.SignOutAsync();
+      navigationManager.NavigateTo("/", true);
+    }
     private string? userEmail;
     protected override async Task OnInitializedAsync()
     {
-        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
+      await base.OnInitializedAsync();
+      var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+      var user = authState.User;
 
-        if (user.Identity?.IsAuthenticated ?? false)
-          userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value ?? "";
+      if (user.Identity?.IsAuthenticated ?? false)
+        userEmail = user.FindFirst(c => c.Type == ClaimTypes.Email)?.Value ?? "";
     }
 }
