@@ -1,7 +1,10 @@
 @page "/metadata"
 @layout Layout.MainLayout
-@using Models.ViewModels
 @rendermode InteractiveServer
+
+@using Models.ViewModels
+
+@inject IOptions<Settings> Settings
 
 <PageTitle>Metadata</PageTitle>
 <div class="home-container">

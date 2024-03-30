@@ -1,59 +1,72 @@
 @page "/verify"
 @layout Layout.MainLayout
-@using FeelFlowAnalysis.Models.ViewModels
 @rendermode InteractiveServer
+
+@using FeelFlowAnalysis.Models.ViewModels
+
+@inject IOptions<Settings> Settings
 
 <PageTitle>Verify</PageTitle>
 <div class="home-container">
     <p class="text-handler">Upload your photo's</p>
     <div class="upload-button-container">
-        @if (imageBytes1 is not null && imageBytes2 is not null)
+        @if (_imageBytes1 is not null && _imageBytes2 is not null)
         {
             // Add img and css
         }
-        @if (data is not null)
+        @* @if (data is not null)
         {
             <p>@data</p>
-        }
+        } *@
         <button class="button upload-button" style="position: relative;">
             Upload
-            <InputFile OnChange="LoadFile" accept="image/*" class="input-file" />
+            <InputFile OnChange="LoadFile" accept="image/*" class="input-file" multiple />
         </button>
     </div>
 </div>
 
 @code {
-    private byte[]? imageBytes1;
-    private byte[]? imageBytes2;
-    private string? imageSource1;
-    private string? imageSource2;
+    private byte[]? _imageBytes1;
+    private byte[]? _imageBytes2;
+    private List<string>? _imagesSource;
     private string? data;
     private string rModelName = string.Empty;
     private string distanceMetric = string.Empty;
+    private bool _loading = false;
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
-        var file = e.File;
+        _imageBytes1 = null;
+        _imageBytes2 = null;
+        _imagesSource = null;
+        _loading = true;
 
-        if(file is null)
+        var files = e.GetMultipleFiles(2);
+
+        if(files is null)
         {
+            _loading = false;
             return;
         }
 
-        if (!file.ContentType.StartsWith("image"))
+        using (var memoryStream1 = new MemoryStream())
         {
-            return;
+            await files[0].OpenReadStream().CopyToAsync(memoryStream1);
+            _imageBytes1 = memoryStream1.ToArray();
         }
 
-        using (var memoryStream = new MemoryStream())
+        using (var memoryStream2 = new MemoryStream())
         {
-            await file.OpenReadStream().CopyToAsync(memoryStream);
-            imageBytes1 = memoryStream.ToArray();
-            imageBytes2 = memoryStream.ToArray();
-            imageSource1 = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes1)}";
-            imageSource2 = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes2)}";
+            await files[1].OpenReadStream().CopyToAsync(memoryStream2);
+            _imageBytes2 = memoryStream2.ToArray();
         }
-
-        var jsonContent = JsonSerializer.Serialize(new VerifyViewModel { B64img1 = imageSource1, B64img2 = imageSource2, RModelName = rModelName, DistanceMetric = distanceMetric} );
+ 
+        var jsonContent = JsonSerializer.Serialize(new VerifyViewModel 
+        { 
+            B64img1 = $"data:{files[0].ContentType};base64,{Convert.ToBase64String(_imageBytes1)}", 
+            B64img2 = $"data:{files[1].ContentType};base64,{Convert.ToBase64String(_imageBytes2)}",
+            RModelName = rModelName,
+            DistanceMetric = distanceMetric
+        });
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
         using (var client = new HttpClient())
         {

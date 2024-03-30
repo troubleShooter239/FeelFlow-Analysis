@@ -9,7 +9,6 @@ public sealed class Startup
 {
     public static void ConfigureServices(WebApplicationBuilder builder)
     {
-        // var sec = builder.Configuration.GetSection(nameof(Settings));
         IConfigurationSection section = builder.Configuration.GetSection(nameof(Settings));
         Settings settings = section.Get<Settings>()!;
         builder.Services
@@ -33,16 +32,13 @@ public sealed class Startup
                     co.Cookie.Name = "auth_token";
                     co.LoginPath = "/login";
                     co.Cookie.MaxAge = TimeSpan.FromMinutes(30);
-                    co.AccessDeniedPath = "/access-denied";
+                    co.AccessDeniedPath = "/access-denied"; // TODO: Add access-denied or delete this line
                 }); 
             
         builder.Services
             .AddRazorComponents()
             .AddInteractiveServerComponents();
         
-        builder.Services.AddHttpClient("", client =>
-        {
-            client.BaseAddress = new Uri(settings.Api.BaseUrl);
-        });
+        builder.Services.AddHttpClient("", c => c.BaseAddress= new Uri(settings.Api.BaseUrl));
     }       
 }

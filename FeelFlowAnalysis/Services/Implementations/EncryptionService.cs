@@ -18,21 +18,8 @@ public sealed class EncryptionService : IEncryptionService
     //     The encryption settings.
     public EncryptionService(IOptions<Settings> settings)
     {
-        var encryption = settings.Value.Encryption;
-        ArgumentNullException.ThrowIfNull(settings);
-
-        if (string.IsNullOrEmpty(encryption.EncryptionKey))
-            throw new ArgumentException(
-                "Encryption key must be a Base64-encoded string.", nameof(encryption.EncryptionKey)
-            );
-
-        if (string.IsNullOrEmpty(encryption.InitializationVector))
-            throw new ArgumentException(
-                "Initialization vector must be a Base64-encoded 16-byte string.", nameof(encryption.InitializationVector)
-            );
-
-        _aes.Key = Convert.FromBase64String(encryption.EncryptionKey);
-        _aes.IV = Convert.FromBase64String(encryption.InitializationVector);
+        _aes.Key = Convert.FromBase64String(settings.Value.Encryption.EncryptionKey);
+        _aes.IV = Convert.FromBase64String(settings.Value.Encryption.InitializationVector);
     }
 
     // Summary:

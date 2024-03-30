@@ -10,8 +10,8 @@ namespace FeelFlowAnalysis.Services.Implementations;
 public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoClient) : IUserService
 {   
     private readonly IMongoCollection<User> _users = mongoClient
-            .GetDatabase(settings.Value.Database.Name)
-            .GetCollection<User>(settings.Value.Database.UsersCollectionName);
+        .GetDatabase(settings.Value.Database.Name)
+        .GetCollection<User>(settings.Value.Database.UsersCollectionName);
 
     // Summary:
     //     Authenticates a user based on email and password hash.
@@ -28,9 +28,8 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //     result contains the authenticated user, if authentication succeeds; otherwise,
     //     null.
     public async Task<User> Authenticate(string email, string passwordHash) => 
-        await (
-            await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)
-        ).FirstOrDefaultAsync();
+        await (await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash))
+            .FirstOrDefaultAsync();
 
     // Summary:
     //     Creates a new user.
@@ -41,8 +40,7 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Create(User user) =>
-        await _users.InsertOneAsync(user);
+    public async Task Create(User user) => await _users.InsertOneAsync(user);
 
     // Summary:
     //     Gets all users.
@@ -50,9 +48,7 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     // Returns:
     //     A task that represents the asynchronous operation. The task result contains
     //     a list of all users.
-    public async Task<List<User>> GetAll() => 
-        await (await _users.FindAsync(u => true))
-            .ToListAsync();
+    public async Task<List<User>> GetAll() => await (await _users.FindAsync(u => true)).ToListAsync();
 
     // Summary:
     //     Gets a user by ID.
@@ -65,8 +61,7 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified ID.
     public async Task<User> Get(string id) =>
-        await (await _users.FindAsync(user => user.Id == id))
-            .FirstOrDefaultAsync();
+        await (await _users.FindAsync(user => user.Id == id)).FirstOrDefaultAsync();
 
     // Summary:
     //     Gets a user by email.
@@ -79,8 +74,7 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified email.
     public async Task<User> GetByEmail(string email) => 
-        await (await _users.FindAsync(user => user.Email == email))
-            .FirstOrDefaultAsync();
+        await (await _users.FindAsync(user => user.Email == email)).FirstOrDefaultAsync();
 
     // Summary:
     //     Removes a user by ID.
@@ -91,8 +85,7 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Remove(string id) => 
-        await _users.DeleteOneAsync(u => u.Id == id);
+    public async Task Remove(string id) => await _users.DeleteOneAsync(u => u.Id == id);
 
     // Summary:
     //     Updates an existing user.
@@ -106,6 +99,5 @@ public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoC
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Update(string id, User user) => 
-        await _users.ReplaceOneAsync(u => u.Id == id, user);
+    public async Task Update(string id, User user) => await _users.ReplaceOneAsync(u => u.Id == id, user);
 }

@@ -9,21 +9,23 @@ public sealed class Settings
 
     public sealed class ApiSettings
     {
-        public string BaseUrl { get; set; } = string.Empty;
-        public string Analyze { get; set; } = string.Empty;
-        public string Metadata { get; set; } = string.Empty;
-        public string Verify { get; set; } = string.Empty;
+        public required string BaseUrl { get; set; }
+        public required string Analyze { get; set; }
+        public int MaxFileSize { get; set; }
+        public required string Metadata { get; set; }
+        public required string Verify { get; set; }
+        public int VerifyMaxFiles { get; set; }
     }
     public sealed class DatabaseSettings
     {
-        public string ConnectionString { get; set; } = string.Empty;
-        public string Name { get; set; } = string.Empty;
-        public string UsersCollectionName { get; set; } = string.Empty;
+        public required string ConnectionString { get; set; }
+        public required string Name { get; set; }
+        public required string UsersCollectionName { get; set; }
     }
     public sealed class EncryptionSettings
     {
-        public string EncryptionKey { get; set; } = string.Empty;
-        public string InitializationVector { get; set; } = string.Empty;
+        public required string EncryptionKey { get; set; }
+        public required string InitializationVector { get; set; }
     }
     public sealed class HashingSettings
     {
