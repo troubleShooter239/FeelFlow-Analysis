@@ -1,8 +1,16 @@
 ﻿@page "/"
 @layout Layout.MainLayout
-@using Models.ViewModels
 @rendermode InteractiveServer
+
+@using Microsoft.Extensions.Logging;
+@using System.IO;
+@using Models.ViewModels
+@using Models.DTO.Analyze
+
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILogger<Home> logger
+@inject HttpClient httpClient
+@inject IOptions<Settings> Settings
 
 <PageTitle>Home</PageTitle>
 
@@ -25,13 +33,31 @@
 }
 
 <div class="home-container">
-    @if(!loading)
+    @if (_imageBytes is not null)
+    {
+        // Add img and css
+    }
+    @if (_errorMessage is not null)
+    {
+        <p>@_errorMessage</p>
+    }
+    @if (_data is not null)
+    {
+        for (int i = 0; i < _data.Length; i++)
+        {
+            <h4>@(i + 1) face:</h4>
+            foreach (var property in typeof(AnalyzeDTO).GetProperties())
+            {
+                <p>@property.Name: @property.GetValue(_data[i])</p>
+            }
+        }
+    }
+    @if(!_loading)
     {
         <p class="text-handler">Upload your photo or video...</p>
     }   
     <div class="upload-button-container">
-
-        @if(loading)
+        @if(_loading)
         {
             <div class="spinner-wrapper">
                 <div class="spinner">
@@ -55,27 +81,36 @@
 </div>
 
 @code {
-    private byte[]? imageBytes;
-    private bool loading = false;
-    private string? imageSource;
-    private string? data;
-    private string imageDataUrl = string.Empty;
-
+    private Dictionary<string, bool> _actions = new()
+    { {"age", true}, {"emotion", true}, {"gender", true}, {"race", true} };
+    private byte[]? _imageBytes;
+    private bool _loading = false;
+    private AnalyzeDTO[]? _data;
+    private string? _errorMessage;
+  
+    private void ClearData()
+    {
+        _data = null;
+        _loading = true;
+        _errorMessage = null;
+    }
+  
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
-        loading = true;
+        ClearData();
+
         var file = e.File;
 
-        if(file is null)
+        if(file is null || !file.ContentType.StartsWith("image"))
         {
-            loading = false;
+            _loading = false;
             return;
         }
 
-        if (!file.ContentType.StartsWith("image"))
+        if (file.Size > Settings.Value.Api.MaxFileSize)
         {
-            loading = false;
-            return;
+            _loading = false;
+            _errorMessage = "File size > 5MB.";
         }
 
         var buffer = new byte[file.Size];
@@ -85,38 +120,47 @@
         imageDataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(buffer)}";
         StateHasChanged();
 
-        using (var memoryStream = new MemoryStream())
+        try
         {
-            await file.OpenReadStream().CopyToAsync(memoryStream);
-            imageBytes = memoryStream.ToArray();
-            imageSource = $"data:{file.ContentType};base64,{Convert.ToBase64String(imageBytes)}";
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(maxAllowedSize: Settings.Value.Api.MaxFileSize)
+                .CopyToAsync(memoryStream);
+            _imageBytes = memoryStream.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _loading = false;
+            logger.LogError(ex.Message);
+            return;
         }
 
-        var values = new Dictionary<string, bool>
-        {
-            {"age", true}, {"emotion", true}, {"gender", true}, {"race", true}
-        };
-        var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel { B64img = imageSource, Actions = values } );
+        var jsonContent = JsonSerializer.Serialize(new AnalyzeViewModel 
+        { 
+            B64img = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}", 
+            Actions = _actions
+        });
         var content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
-        using (var client = new HttpClient())
+
+        try
         {
-            try
-            {
-                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Analyze, content);
-                if (!response.IsSuccessStatusCode)
-                {
-                    loading = false;
-                    return; 
-                }
-                    
-                data = await response.Content.ReadAsStringAsync();
-                loading = false;
-            }
-            catch
-            {
-                loading = false;
-                return;
-            }
+            var response = await httpClient
+                .PostAsync(Settings.Value.Api.Analyze, content);
+            response.EnsureSuccessStatusCode();
+            
+            var serialized_data = await response.Content.ReadAsStringAsync();
+            
+            logger.LogInformation("API response:\n" + serialized_data);
+
+            _data = JsonSerializer.Deserialize<AnalyzeDTO[]>(serialized_data);
+        }
+        catch(Exception ex)
+        {
+            logger.LogError(ex.Message);
+            return;
+        }
+        finally
+        {
+            _loading = false;
         }
     }
 }   

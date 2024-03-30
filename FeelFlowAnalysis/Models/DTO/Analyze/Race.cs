@@ -1,9 +1,8 @@
-﻿using System.Collections;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FeelFlowAnalysis.Models.DTO.Analyze;
 
-public class Race : IEnumerable<KeyValuePair<string, float>>
+public class Race
 {
     [JsonPropertyName("asian")]
     public float Asian { get; set; }
@@ -22,16 +21,4 @@ public class Race : IEnumerable<KeyValuePair<string, float>>
 
     [JsonPropertyName("latino_hispanic")]
     public float LatinoHispanic { get; set; }
-
-    public IEnumerator<KeyValuePair<string, float>> GetEnumerator()
-    {
-        yield return new KeyValuePair<string, float>("asian", Asian);
-        yield return new KeyValuePair<string, float>("indian", Indian);
-        yield return new KeyValuePair<string, float>("black", Black);
-        yield return new KeyValuePair<string, float>("white", White);
-        yield return new KeyValuePair<string, float>("middle_eastern", MiddleEastern);
-        yield return new KeyValuePair<string, float>("latino_hispanic", LatinoHispanic);
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

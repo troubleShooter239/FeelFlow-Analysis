@@ -1,18 +1,17 @@
 ﻿using MongoDB.Driver;
 using FeelFlowAnalysis.Models.Entities;
-using FeelFlowAnalysis.Models.Settings;
 using FeelFlowAnalysis.Services.Interfaces;
-
+using Microsoft.Extensions.Options;
 
 namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Service for managing user data.
-public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUserService
+public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoClient) : IUserService
 {   
     private readonly IMongoCollection<User> _users = mongoClient
-        .GetDatabase(settings.DatabaseName)
-        .GetCollection<User>(settings.UsersCollectionName);
+        .GetDatabase(settings.Value.Database.Name)
+        .GetCollection<User>(settings.Value.Database.UsersCollectionName);
 
     // Summary:
     //     Authenticates a user based on email and password hash.
@@ -29,9 +28,8 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     result contains the authenticated user, if authentication succeeds; otherwise,
     //     null.
     public async Task<User> Authenticate(string email, string passwordHash) => 
-        await (
-            await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash)
-        ).FirstOrDefaultAsync();
+        await (await _users.FindAsync(u => u.Email == email && u.PasswordHash == passwordHash))
+            .FirstOrDefaultAsync();
 
     // Summary:
     //     Creates a new user.
@@ -42,8 +40,7 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Create(User user) =>
-        await _users.InsertOneAsync(user);
+    public async Task Create(User user) => await _users.InsertOneAsync(user);
 
     // Summary:
     //     Gets all users.
@@ -51,9 +48,7 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     // Returns:
     //     A task that represents the asynchronous operation. The task result contains
     //     a list of all users.
-    public async Task<List<User>> GetAll() => 
-        await (await _users.FindAsync(u => true))
-            .ToListAsync();
+    public async Task<List<User>> GetAll() => await (await _users.FindAsync(u => true)).ToListAsync();
 
     // Summary:
     //     Gets a user by ID.
@@ -66,8 +61,7 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified ID.
     public async Task<User> Get(string id) =>
-        await (await _users.FindAsync(user => user.Id == id))
-            .FirstOrDefaultAsync();
+        await (await _users.FindAsync(user => user.Id == id)).FirstOrDefaultAsync();
 
     // Summary:
     //     Gets a user by email.
@@ -80,8 +74,7 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //     A task that represents the asynchronous operation. The task result contains
     //     the user with the specified email.
     public async Task<User> GetByEmail(string email) => 
-        await (await _users.FindAsync(user => user.Email == email))
-            .FirstOrDefaultAsync();
+        await (await _users.FindAsync(user => user.Email == email)).FirstOrDefaultAsync();
 
     // Summary:
     //     Removes a user by ID.
@@ -92,8 +85,7 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Remove(string id) => 
-        await _users.DeleteOneAsync(u => u.Id == id);
+    public async Task Remove(string id) => await _users.DeleteOneAsync(u => u.Id == id);
 
     // Summary:
     //     Updates an existing user.
@@ -107,6 +99,5 @@ public class UserService(IDbSettings settings, IMongoClient mongoClient) : IUser
     //
     // Returns:
     //     A task that represents the asynchronous operation.
-    public async Task Update(string id, User user) => 
-        await _users.ReplaceOneAsync(u => u.Id == id, user);
+    public async Task Update(string id, User user) => await _users.ReplaceOneAsync(u => u.Id == id, user);
 }

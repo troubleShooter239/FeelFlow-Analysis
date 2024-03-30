@@ -1,7 +1,10 @@
 @page "/metadata"
 @layout Layout.MainLayout
-@using Models.ViewModels
 @rendermode InteractiveServer
+
+@using Models.ViewModels
+
+@inject IOptions<Settings> Settings
 
 <PageTitle>Metadata</PageTitle>
 
@@ -95,7 +98,7 @@
         {
             try
             {
-                var response = await client.PostAsync(apiSettings.ApiUrl + apiSettings.Metadata, content);
+                var response = await client.PostAsync(Settings.Value.Api.Metadata, content);
                 if (!response.IsSuccessStatusCode)
                 {
                     loading = false;

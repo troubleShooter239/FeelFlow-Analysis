@@ -1,57 +1,44 @@
-﻿using FeelFlowAnalysis.Models.Settings;
-using FeelFlowAnalysis.Services.Implementations;
+﻿using FeelFlowAnalysis.Services.Implementations;
 using FeelFlowAnalysis.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 namespace FeelFlowAnalysis;
 
-public class Startup
+public sealed class Startup
 {
-    // TODO: Add settings.cs 
     public static void ConfigureServices(WebApplicationBuilder builder)
     {
-        var config = builder.Configuration;
+        IConfigurationSection section = builder.Configuration.GetSection(nameof(Settings));
+        Settings settings = section.Get<Settings>()!;
         builder.Services
-            // API settings
-            .Configure<ApiSettings>(config.GetSection(nameof(ApiSettings)))
-            .AddSingleton<IApiSettings>(sp =>
-                sp.GetRequiredService<IOptions<ApiSettings>>().Value)
+            // Configuring settings
+            .Configure<Settings>(section)
             // Encryption service
-            .Configure<EncryptionSettings>(config.GetSection(nameof(EncryptionSettings)))
-            .AddSingleton<IEncryptionSettings>(sp => 
-                sp.GetRequiredService<IOptions<EncryptionSettings>>().Value)
             .AddScoped<IEncryptionService, EncryptionService>()
             // Hashing service
-            .Configure<HashingSettings>(config.GetSection(nameof(HashingSettings)))
-            .AddSingleton<IHashingSettings>(sp => 
-                sp.GetRequiredService<IOptions<HashingSettings>>().Value)
             .AddScoped<IHashingService, HashingService>()
-            // DB settings
-            .Configure<DbSettings>(config.GetSection(nameof(DbSettings)))
-            .AddSingleton<IDbSettings>(sp => 
-                sp.GetRequiredService<IOptions<DbSettings>>().Value)
-            .AddSingleton<IMongoClient>(sp =>
-                new MongoClient(config.GetValue<string>("DbSettings:ConnectionString")))
+            // DB clinet
+            .AddSingleton<IMongoClient>(sp => new MongoClient(settings.Database.ConnectionString))
             // User service
             .AddScoped<IUserService, UserService>()
             // Authorization service
             .AddAuthorization()
             .AddCascadingAuthenticationState()
+            // Cookie auth service
+            .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+            .AddCookie(co => 
+                {
+                    co.Cookie.Name = "auth_token";
+                    co.LoginPath = "/login";
+                    co.Cookie.MaxAge = TimeSpan.FromMinutes(30);
+                    co.AccessDeniedPath = "/access-denied"; // TODO: Add access-denied or delete this line
+                }); 
             
+        builder.Services
             .AddRazorComponents()
             .AddInteractiveServerComponents();
-            
-            // Cookie auth service
-        builder.Services
-            .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-            .AddCookie(options => 
-            {
-                options.Cookie.Name = "auth_token";
-                options.LoginPath = "/login";
-                options.Cookie.MaxAge = TimeSpan.FromMinutes(30);
-                options.AccessDeniedPath = "/access-denied";
-            });   
+        
+        builder.Services.AddHttpClient("", c => c.BaseAddress= new Uri(settings.Api.BaseUrl));
     }       
 }

@@ -1,9 +1,8 @@
-﻿using System.Collections;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
 namespace FeelFlowAnalysis.Models.DTO.Analyze;
 
-public class Emotion : IEnumerable<KeyValuePair<string, float>>
+public class Emotion
 {
     [JsonPropertyName("angry")]
     public float Angry { get; set; }
@@ -25,17 +24,4 @@ public class Emotion : IEnumerable<KeyValuePair<string, float>>
 
     [JsonPropertyName("neutral")]
     public float Neutral { get; set; }
-
-    public IEnumerator<KeyValuePair<string, float>> GetEnumerator()
-    {
-        yield return new KeyValuePair<string, float>("angry", Angry);
-        yield return new KeyValuePair<string, float>("disgust", Disgust);
-        yield return new KeyValuePair<string, float>("fear", Fear);
-        yield return new KeyValuePair<string, float>("happy", Happy);
-        yield return new KeyValuePair<string, float>("sad", Sad);
-        yield return new KeyValuePair<string, float>("surprise", Surprise);
-        yield return new KeyValuePair<string, float>("neutral", Neutral);
-    }
-
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 }

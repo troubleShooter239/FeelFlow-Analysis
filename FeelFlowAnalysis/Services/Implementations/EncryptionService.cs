@@ -1,12 +1,12 @@
 ﻿using System.Security.Cryptography;
-using FeelFlowAnalysis.Models.Settings;
 using FeelFlowAnalysis.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Provides encryption services.
-public class EncryptionService : IEncryptionService
+public sealed class EncryptionService : IEncryptionService
 {
     private readonly Aes _aes = Aes.Create();
 
@@ -16,22 +16,10 @@ public class EncryptionService : IEncryptionService
     // Parameters:
     //   settings:
     //     The encryption settings.
-    public EncryptionService(IEncryptionSettings settings)
+    public EncryptionService(IOptions<Settings> settings)
     {
-        ArgumentNullException.ThrowIfNull(settings);
-
-        if (string.IsNullOrEmpty(settings.EncryptionKey))
-            throw new ArgumentException(
-                "Encryption key must be a Base64-encoded string.", nameof(settings.EncryptionKey)
-            );
-
-        if (string.IsNullOrEmpty(settings.InitializationVector))
-            throw new ArgumentException(
-                "Initialization vector must be a Base64-encoded 16-byte string.", nameof(settings.InitializationVector)
-            );
-
-        _aes.Key = Convert.FromBase64String(settings.EncryptionKey);
-        _aes.IV = Convert.FromBase64String(settings.InitializationVector);
+        _aes.Key = Convert.FromBase64String(settings.Value.Encryption.EncryptionKey);
+        _aes.IV = Convert.FromBase64String(settings.Value.Encryption.InitializationVector);
     }
 
     // Summary:

@@ -1,16 +1,16 @@
 ﻿using System.Security.Cryptography;
-using FeelFlowAnalysis.Models.Settings;
 using FeelFlowAnalysis.Services.Interfaces;
+using Microsoft.Extensions.Options;
 
 namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Provides hashing services.
-public class HashingService(IHashingSettings settings) : IHashingService
+public sealed class HashingService(IOptions<Settings> settings) : IHashingService
 {
-    private readonly int _saltSize = settings.SaltSize;
-    private readonly int _hashSize = settings.HashSize;
-    private readonly int _iterations = settings.Iterations;
+    private readonly int _saltSize = settings.Value.Hashing.SaltSize;
+    private readonly int _hashSize = settings.Value.Hashing.HashSize;
+    private readonly int _iterations = settings.Value.Hashing.Iterations;
 
     // Summary:
     //     Hashes a string.
