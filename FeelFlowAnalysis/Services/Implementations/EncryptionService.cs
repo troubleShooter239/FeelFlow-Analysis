@@ -6,7 +6,7 @@ namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Provides encryption services.
-public class EncryptionService : IEncryptionService
+public sealed class EncryptionService : IEncryptionService
 {
     private readonly Aes _aes = Aes.Create();
 

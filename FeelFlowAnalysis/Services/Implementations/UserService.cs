@@ -7,7 +7,7 @@ namespace FeelFlowAnalysis.Services.Implementations;
 
 // Summary:
 //     Service for managing user data.
-public class UserService(IOptions<Settings> settings, IMongoClient mongoClient) : IUserService
+public sealed class UserService(IOptions<Settings> settings, IMongoClient mongoClient) : IUserService
 {   
     private readonly IMongoCollection<User> _users = mongoClient
             .GetDatabase(settings.Value.Database.Name)
