@@ -13,6 +13,25 @@
 @inject IOptions<Settings> Settings
 
 <PageTitle>Home</PageTitle>
+
+@if (!string.IsNullOrEmpty(imageDataUrl))
+{   
+    <div class="image-data-container">
+        <img src="@imageDataUrl" alt="Image" class="user-card"/>
+        <div class="data-container">
+            <span class="user-info-card">race</span>
+            <span class="user-info-card">age</span>
+            <span class="user-info-card">gender</span>
+            <span class="user-info-card">mood</span>
+            <span class="user-info-card">geo</span>
+            <span class="user-info-card">some</span>
+            <span class="user-info-card">else</span>
+            <span class="user-info-card">words</span>
+            <span class="user-info-card">written</span>
+        </div>
+    </div>
+}
+
 <div class="home-container">
     @if (_imageBytes is not null)
     {
@@ -68,12 +87,14 @@
     private bool _loading = false;
     private AnalyzeDTO[]? _data;
     private string? _errorMessage;
+  
     private void ClearData()
     {
         _data = null;
         _loading = true;
         _errorMessage = null;
     }
+  
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
         ClearData();
@@ -91,6 +112,13 @@
             _loading = false;
             _errorMessage = "File size > 5MB.";
         }
+
+        var buffer = new byte[file.Size];
+        await file.OpenReadStream().ReadAsync(buffer);
+
+        string mimeType = file.ContentType;
+        imageDataUrl = $"data:{mimeType};base64,{Convert.ToBase64String(buffer)}";
+        StateHasChanged();
 
         try
         {
