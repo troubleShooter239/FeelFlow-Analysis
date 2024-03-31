@@ -3,6 +3,7 @@
 @using Microsoft.AspNetCore.Authentication.Cookies
 @using FeelFlowAnalysis.Models.ViewModels
 @using FeelFlowAnalysis.Services.Interfaces
+
 @inject IEncryptionService encryptionService
 @inject IHashingService hashingService
 @inject IUserService userService
@@ -68,8 +69,8 @@
         }
 
         var user = await userService.Authenticate(
-        encryptionService.EncryptString(_Model.Email),
-        hashingService.HashString(_Model.Password)
+            encryptionService.EncryptString(_Model.Email),
+            hashingService.HashString(_Model.Password)
         );
         if (user is null)
         {
@@ -78,10 +79,10 @@
         }
 
         var claims = new List<Claim>
-{
-new Claim(ClaimTypes.Email, _Model.Email),
-new Claim(ClaimTypes.Role, user.Role.ToString())
-};
+        {
+            new Claim(ClaimTypes.Email, _Model.Email),
+            new Claim(ClaimTypes.Role, user.Role.ToString())
+        };
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         await _HttpContext!.SignInAsync(new ClaimsPrincipal(identity));

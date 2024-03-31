@@ -15,9 +15,9 @@ public sealed class Startup
             // Configuring settings
             .Configure<Settings>(section)
             // Encryption service
-            .AddScoped<IEncryptionService, EncryptionService>()
+            .AddSingleton<IEncryptionService, EncryptionService>()
             // Hashing service
-            .AddScoped<IHashingService, HashingService>()
+            .AddTransient<IHashingService, HashingService>()
             // DB clinet
             .AddSingleton<IMongoClient>(sp => new MongoClient(settings.Database.ConnectionString))
             // User service

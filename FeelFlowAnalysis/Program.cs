@@ -1,26 +1,23 @@
+using FeelFlowAnalysis;
 using FeelFlowAnalysis.Components;
 
 var builder = WebApplication.CreateBuilder(args);
 
-FeelFlowAnalysis.Startup.ConfigureServices(builder);
+Startup.ConfigureServices(builder);
 
 var app = builder.Build();
 
 if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    app.UseHsts();
-}
+    app.UseExceptionHandler("/Error", createScopeForErrors: true)
+        .UseHsts();
 
-app.UseHttpsRedirection();
+app.UseHttpsRedirection()
+    .UseStaticFiles()
+    .UseAntiforgery()
+    // Add auth to application
+    .UseAuthentication()
+    .UseAuthorization();
 
-app.UseStaticFiles();
-app.UseAntiforgery();
-// Add auth to application
-app.UseAuthentication();
-app.UseAuthorization();
-
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>().AddInteractiveServerRenderMode();
 
 app.Run();
