@@ -21,13 +21,21 @@
             <img src="@_imageSource" alt="Image" class="user-card"/>
         </div>
         <div class="data-container">
-            @for (int i = 0; i < _data.Length; i++)
+            @foreach (var f in _data)
             {
-                <span class="user-info-card">@(i + 1) face:</span>
-                foreach (var property in typeof(AnalyzeDTO).GetProperties())
-                {
-                    <span class="user-info-card">@property.Name: @property.GetValue(_data[i])</span>
-                }
+                var reg = f.Region;
+                <span class="user-info-card">Region: X=@reg.X Y=@reg.Y W=@reg.W H=@reg.H</span>
+                <span class="user-info-card">Face confidence: @f.FaceConfidence</span>
+                <span class="user-info-card">Age: @f.Age</span>
+                var e = f.Emotion;
+                <span class="user-info-card">Emotion: Angry=@e.Angry Disgust=@e.Disgust Fear=@e.Fear Happy=@e.Happy Sad=@e.Sad Surprise=@e.Surprise Neutral=@e.Neutral</span>
+                <span class="user-info-card">Dominant emotion: @f.DominantEmotion</span>
+                var g = f.Gender;
+                <span class="user-info-card">Gender: Woman=@g.Woman Man=@g.Man</span>
+                <span class="user-info-card">Dominant gender: @f.DominantGender</span>
+                var r = f.Race;
+                <span class="user-info-card">Race: Asian=@r.Asian Indian=@r.Indian Black=@r.Black White=@r.White MiddleEastern=@r.MiddleEastern LatinoHispanic=@r.LatinoHispanic</span>
+                <span class="user-info-card">Dominant race: @f.DominantRace</span>                
             }
         </div>
     </div>

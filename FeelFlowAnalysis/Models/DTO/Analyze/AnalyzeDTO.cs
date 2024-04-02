@@ -5,21 +5,21 @@ namespace FeelFlowAnalysis.Models.DTO.Analyze;
 public class AnalyzeDTO
 {
     [JsonPropertyName("region")]
-    public Region? Region { get; set; }
+    public required Region Region { get; set; }
     [JsonPropertyName("face_confidence")]
     public float FaceConfidence { get; set; }
     [JsonPropertyName("age")]
     public int Age { get; set; }
     [JsonPropertyName("emotion")]
-    public Emotion? Emotion { get; set; }
+    public required Emotion Emotion { get; set; }
     [JsonPropertyName("dominant_emotion")]
-    public string? DominantEmotion { get; set; }
+    public required string DominantEmotion { get; set; }
     [JsonPropertyName("gender")]
-    public Gender? Gender { get; set; }
+    public required Gender Gender { get; set; }
     [JsonPropertyName("dominant_gender")]
-    public string? DominantGender { get; set; }
+    public required string DominantGender { get; set; }
     [JsonPropertyName("race")]
-    public Race? Race { get; set; }
+    public required Race Race { get; set; }
     [JsonPropertyName("dominant_race")]
-    public string? DominantRace { get; set; }
+    public required string DominantRace { get; set; }
 }
